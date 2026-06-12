@@ -1,0 +1,173 @@
+● Codebase Audit: Issues Found
+     
+  NAVIGATION (Critical)
+  
+  #: 1
+  File: Navbar.tsx   
+  Location: Logo <a href="#">
+  Issue: Site logo is a dead link — clicking does nothing
+  Severity: Critical
+  ────────────────────────────────────────
+  #: 2
+  File: Navbar.tsx
+  Location: "Blog" nav button       
+  Issue: Navigates to Post page instead of Home
+  Severity: Critical
+  ────────────────────────────────────────
+  #: 3  
+  File: Navbar.tsx   
+  Location: Mobile menu links (line 173-177)
+  Issue: All <a href="#"> with NO onClick handlers — completely
+    non-functional   
+  Severity: Critical
+  ────────────────────────────────────────
+  #: 4
+  File: Footer.tsx
+  Location: Logo <a href="#">
+  Issue: Footer logo is a dead link
+  Severity: Critical
+  ────────────────────────────────────────
+  #: 5
+  File: Footer.tsx
+  Location: "Blog", "Projects", "About", "RSS Feed" links
+  Issue: Buttons mapped without onClick handlers — no navigation
+  Severity: Critical
+  ────────────────────────────────────────
+  #: 6
+  File: Hero.tsx
+  Location: "About Me" button
+  Issue: Has hover effects but NO onClick handler
+  Severity: Critical
+  ────────────────────────────────────────
+  #: 7
+  File: AdminSidebar.tsx
+  Location: "View Blog" link
+  Issue: <a href="#"> does nothing
+  Severity: Critical
+
+  INTERACTION (Medium)
+
+  ┌─────┬──────────────────┬───────────┬────────────────────┬──────────┐
+  │  #  │       File       │ Location  │       Issue        │ Severity │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │ Desktop    │ No onKeyDown      │          │
+  │ 8   │ Navbar.tsx       │ search     │ Enter handler —   │ Medium   │
+  │     │                  │ input      │ search is         │          │
+  │     │                  │            │ non-functional    │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │ Mobile     │ No onClick        │          │
+  │ 9   │ Navbar.tsx       │ search     │ handler — does    │ Medium   │
+  │     │                  │ button     │ nothing           │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │            │ cursor: pointer   │          │
+  │ 10  │ BlogPost.tsx     │ Tag pills  │ but no onClick —  │ Medium   │
+  │     │                  │            │ hardcoded tags    │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │ Twitter    │ cursor: pointer   │          │
+  │ 11  │ BlogPost.tsx     │ share      │ but no onClick    │ Medium   │
+  │     │                  │ button     │                   │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │ Popular    │ cursor-pointer    │          │
+  │ 12  │ Sidebar.tsx      │ posts      │ class but no      │ Medium   │
+  │     │                  │            │ onClick           │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │ Archive    │ cursor-pointer    │          │
+  │ 13  │ Sidebar.tsx      │ items      │ class but no      │ Medium   │
+  │     │                  │            │ onClick           │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │ "View      │ All href="#" —    │          │
+  │ 14  │ ProjectsPage.tsx │ Source"    │ no-op             │ Medium   │
+  │     │                  │ links      │                   │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │ "Live      │ All href="#" or   │          │
+  │ 15  │ ProjectsPage.tsx │ Demo"      │ null — no-op      │ Medium   │
+  │     │                  │ links      │                   │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │            │ "GitHub profile"  │          │
+  │ 16  │ ProjectsPage.tsx │ Hero CTAs  │ and "Read case    │ Medium   │
+  │     │                  │            │ studies" both     │          │
+  │     │                  │            │ href="#"          │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │ Bottom CTA │ href="#" —        │          │
+  │ 17  │ ProjectsPage.tsx │  "Get in   │ doesn't navigate  │ Medium   │
+  │     │                  │ touch"     │ to contact        │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │ 18  │ AboutPage.tsx    │ "Download  │ href="#" with no  │ Medium   │
+  │     │                  │ Résumé"    │ file              │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │ GitHub &   │                   │          │
+  │ 19  │ AboutPage.tsx    │ LinkedIn   │ href="#"          │ Medium   │
+  │     │                  │ social     │                   │          │
+  │     │                  │ links      │                   │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │     │                  │ Projects   │ GitHub/Live links │          │
+  │ 20  │ AboutPage.tsx    │ section    │  all href="#"     │ Medium   │
+  │     │                  │ links      │                   │          │
+  ├─────┼──────────────────┼────────────┼───────────────────┼──────────┤
+  │ 21  │ AboutPage.tsx    │ "View all  │ href="#"          │ Medium   │
+  │     │                  │ on GitHub" │                   │          │
+  └─────┴──────────────────┴────────────┴───────────────────┴──────────┘
+
+  LOW PRIORITY
+  
+  #: 22
+  File: Footer.tsx   
+  Location: Social links (GitHub, Twitter, LinkedIn, Email)
+  Issue: All href="#" with hover states but no real URLs
+  Severity: Low
+  ──────────────────────────────────────── 
+  #: 23 
+  File: ContactPage.tsx
+  Location: Social links
+  Issue: GitHub, LinkedIn, Twitter all href="#"
+  Severity: Low
+  ────────────────────────────────────────
+  #: 24
+  File: AdminTopBar.tsx
+  Location: Bell notification button
+  Issue: cursor: pointer but no onClick
+  Severity: Low
+  ────────────────────────────────────────
+  #: 25
+  File: PostEditor.tsx
+  File: PostEditor.tsx
+  Issue: cursor: pointer but no onClick
+  Severity: Low
+
+  ROUTING ARCHITECTURE
+
+  ┌─────┬───────────────────────────────────────────────────────────────┐
+  │  #  │                            Finding                            │
+  ├─────┼───────────────────────────────────────────────────────────────┤
+  │ 26  │ Current mechanism: React state navigation                     │
+  │     │ (useState<Page>("home")) — NOT React Router or Next.js        │
+  ├─────┼───────────────────────────────────────────────────────────────┤
+  │ 27  │ Navigation: Callback props drilled through component tree     │
+  │     │ (onOpenPost, onOpenAbout, etc.)                               │
+  ├─────┼───────────────────────────────────────────────────────────────┤
+  │ 28  │ No URL-based routing — back button breaks navigation, pages   │
+  │     │ not shareable by URL                                          │
+  └─────┴───────────────────────────────────────────────────────────────┘
+
+  ALREADY FIXED (by me in this session)
+
+  - ✅ App.tsx — Added onOpenHome callback, wired all new props to children
+  - ✅ Navbar.tsx — Fixed logo navigation, fixed "Blog" → home, fixed
+  mobile nav links, added search Enter handler
+  - ✅ Footer.tsx — Fixed logo, wired all footer links, disabled social
+  links visually
+  - ✅ Hero.tsx — Wired "About Me" button to onOpenAbout
+  - ✅ BlogPost.tsx — Wired tag pills to onTagClick, disabled Twitter share
+  placeholder
+  - ✅ Sidebar.tsx — Wired popular posts to onOpenPost, removed cursor from
+  archive
+  - ✅ ProjectsPage.tsx — Marked all project links as placeholder, wired
+  bottom CTA to contact
+  - ✅ AboutPage.tsx — Marked resume/social/project links as placeholder
+  - ✅ ContactPage.tsx — Marked social links as placeholder
+  - ✅ AdminSidebar.tsx — Added onViewBlog prop, converted link to button
+  - ✅ AdminDashboard.tsx — Passed onViewBlog to AdminSidebar
+  - ✅ AdminTopBar.tsx — Marked bell as placeholder/disabled
+  - PostEditor.tsx — Preview button not yet fixed (interrupted)
+
+  Files modified so far: 12 out of 13 planned
