@@ -1,29 +1,14 @@
 import { useState, useRef, useEffect } from "react";
+import { Link, useNavigate } from "react-router";
 import { Search, X, Menu, Settings, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
-import type { AuthUser } from "../App";
+import { useAuth } from "../../lib/auth-context";
+import { BRAND_DOMAIN } from "../../lib/constants";
 
-interface Props {
-  user?: AuthUser | null;
-  onOpenHome?: () => void;
-  onOpenPost?: () => void;
-  onOpenAdmin?: () => void;
-  onOpenAuth?: () => void;
-  onOpenSettings?: () => void;
-  onOpenAbout?: () => void;
-  onOpenProjects?: () => void;
-  onOpenContact?: () => void;
-  onOpen404?: () => void;
-  onLogout?: () => void;
-}
-
-function UserMenu({ user, onOpenSettings, onOpenAdmin, onLogout }: {
-  user: AuthUser;
-  onOpenSettings?: () => void;
-  onOpenAdmin?: () => void;
-  onLogout?: () => void;
-}) {
+function UserMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -32,6 +17,8 @@ function UserMenu({ user, onOpenSettings, onOpenAdmin, onLogout }: {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  if (!user) return null;
 
   const initials = user.name.slice(0, 2).toUpperCase();
 
@@ -65,11 +52,11 @@ function UserMenu({ user, onOpenSettings, onOpenAdmin, onLogout }: {
           {/* Menu items */}
           <div style={{ padding: "6px" }}>
             {user.role === "admin" && (
-              <MenuItem icon={<LayoutDashboard size={14} />} label="Admin Dashboard" onClick={() => { setOpen(false); onOpenAdmin?.(); }} />
+              <MenuItem icon={<LayoutDashboard size={14} />} label="Admin Dashboard" onClick={() => { setOpen(false); navigate("/admin"); }} />
             )}
-            <MenuItem icon={<Settings size={14} />} label="Account Settings" onClick={() => { setOpen(false); onOpenSettings?.(); }} />
+            <MenuItem icon={<Settings size={14} />} label="Account Settings" onClick={() => { setOpen(false); navigate("/settings"); }} />
             <div style={{ height: "1px", background: "rgba(255,255,255,0.07)", margin: "4px 0" }} />
-            <MenuItem icon={<LogOut size={14} />} label="Sign out" onClick={() => { setOpen(false); onLogout?.(); }} danger />
+            <MenuItem icon={<LogOut size={14} />} label="Sign out" onClick={() => { setOpen(false); logout(); navigate("/"); }} danger />
           </div>
         </div>
       )}
@@ -91,20 +78,19 @@ function MenuItem({ icon, label, onClick, danger }: { icon: React.ReactNode; lab
   );
 }
 
-export function Navbar({ user, onOpenHome, onOpenPost, onOpenAdmin, onOpenAuth, onOpenSettings, onOpenAbout, onOpenProjects, onOpenContact, onOpen404, onLogout }: Props) {
+export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const navLinks = ["Blog", "Projects", "About", "Contact"];
-
-  const handleNavClick = (link: string) => {
-    setMenuOpen(false);
-    if (link === "Blog") onOpenHome?.();
-    else if (link === "About") onOpenAbout?.();
-    else if (link === "Contact") onOpenContact?.();
-    else if (link === "Projects") onOpenProjects?.();
-  };
+  const navLinks = [
+    { label: "Blog", path: "/" },
+    { label: "Projects", path: "/projects" },
+    { label: "About", path: "/about" },
+    { label: "Contact", path: "/contact" },
+  ];
 
   return (
     <nav
@@ -117,25 +103,26 @@ export function Navbar({ user, onOpenHome, onOpenPost, onOpenAdmin, onOpenAuth, 
       />
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
         {/* Logo */}
-        <button
-          onClick={() => { onOpenHome?.(); setMenuOpen(false); }}
-          style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.25rem", color: "#fff", letterSpacing: "-0.01em", flexShrink: 0, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        <Link
+          to="/"
+          onClick={() => setMenuOpen(false)}
+          style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.25rem", color: "#fff", letterSpacing: "-0.01em", flexShrink: 0, textDecoration: "none" }}
         >
-          wong.dev
-        </button>
+          {BRAND_DOMAIN}
+        </Link>
 
         {/* Center links — desktop */}
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
-            <button
-              key={link}
-              onClick={() => handleNavClick(link)}
-              style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500, color: "rgba(255,255,255,0.65)", transition: "color 0.15s", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            <Link
+              key={link.path}
+              to={link.path}
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500, color: "rgba(255,255,255,0.65)", transition: "color 0.15s", textDecoration: "none" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.65)")}
             >
-              {link}
-            </button>
+              {link.label}
+            </Link>
           ))}
         </div>
 
@@ -150,7 +137,6 @@ export function Navbar({ user, onOpenHome, onOpenPost, onOpenAdmin, onOpenAuth, 
                 style={{ background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: "0.875rem", fontFamily: "'Inter', sans-serif", width: "160px" }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    // Search is not implemented yet
                     setSearchOpen(false);
                   }
                 }}
@@ -166,11 +152,11 @@ export function Navbar({ user, onOpenHome, onOpenPost, onOpenAdmin, onOpenAuth, 
           )}
 
           {user ? (
-            <UserMenu user={user} onOpenSettings={onOpenSettings} onOpenAdmin={onOpenAdmin} onLogout={onLogout} />
+            <UserMenu />
           ) : (
             <button
               style={{ background: "#5046e5", color: "#fff", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500, padding: "8px 18px", borderRadius: "8px", border: "none", cursor: "pointer", transition: "background 0.15s" }}
-              onClick={onOpenAuth ?? onOpenAdmin}
+              onClick={() => navigate("/auth")}
               onMouseEnter={(e) => (e.currentTarget.style.background = "#4338ca")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "#5046e5")}
             >
@@ -190,13 +176,14 @@ export function Navbar({ user, onOpenHome, onOpenPost, onOpenAdmin, onOpenAuth, 
         <div className="md:hidden relative" style={{ background: "#0d0f1e", borderTop: "1px solid rgba(255,255,255,0.08)", padding: "16px 24px 24px" }}>
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
-              <button
-                key={link}
-                onClick={() => handleNavClick(link)}
-                style={{ fontFamily: "'Inter', sans-serif", fontSize: "1rem", fontWeight: 500, color: "rgba(255,255,255,0.75)", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setMenuOpen(false)}
+                style={{ fontFamily: "'Inter', sans-serif", fontSize: "1rem", fontWeight: 500, color: "rgba(255,255,255,0.75)", textDecoration: "none" }}
               >
-                {link}
-              </button>
+                {link.label}
+              </Link>
             ))}
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "16px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
               <button
@@ -209,19 +196,14 @@ export function Navbar({ user, onOpenHome, onOpenPost, onOpenAdmin, onOpenAuth, 
                 ref={mobileSearchRef}
                 placeholder="Search posts…"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "8px", padding: "6px 10px", color: "#fff", fontSize: "0.875rem", fontFamily: "'Inter', sans-serif", width: "120px", outline: "none" }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    // Search is not implemented yet
-                  }
-                }}
               />
               {user ? (
                 <>
-                  <button onClick={() => { setMenuOpen(false); onOpenSettings?.(); }} style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.65)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "7px 14px", cursor: "pointer" }}>Settings</button>
-                  <button onClick={() => { setMenuOpen(false); onLogout?.(); }} style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "#f87171", background: "transparent", border: "none", cursor: "pointer", padding: "7px 0" }}>Sign out</button>
+                  <button onClick={() => { setMenuOpen(false); navigate("/settings"); }} style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.65)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "7px 14px", cursor: "pointer" }}>Settings</button>
+                  <button onClick={() => { setMenuOpen(false); navigate("/"); }} style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "#f87171", background: "transparent", border: "none", cursor: "pointer", padding: "7px 0" }}>Sign out</button>
                 </>
               ) : (
-                <button onClick={() => { setMenuOpen(false); (onOpenAuth ?? onOpenAdmin)?.(); }} style={{ background: "#5046e5", color: "#fff", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500, padding: "8px 18px", borderRadius: "8px", border: "none", cursor: "pointer" }}>
+                <button onClick={() => { setMenuOpen(false); navigate("/auth"); }} style={{ background: "#5046e5", color: "#fff", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500, padding: "8px 18px", borderRadius: "8px", border: "none", cursor: "pointer" }}>
                   Sign in
                 </button>
               )}

@@ -1,28 +1,6 @@
 import { useState } from "react";
 import { Pencil, Trash2, AlertTriangle, SearchX, Eye, ChevronUp, ChevronDown } from "lucide-react";
-
-interface Post {
-  id: number;
-  title: string;
-  tag: string;
-  tagColor: string;
-  status: "published" | "draft";
-  views: number;
-  date: string;
-}
-
-const ALL_POSTS: Post[] = [
-  { id: 1, title: "Zero-Downtime Blue-Green Deployments with Terraform and AWS ECS", tag: "Terraform", tagColor: "#8b5cf6", status: "published", views: 2847, date: "Jun 10, 2026" },
-  { id: 2, title: "Setting Up a Multi-Region S3 Replication with Lifecycle Policies",  tag: "AWS",       tagColor: "#f97316", status: "published", views: 2110, date: "Jun 8, 2026"  },
-  { id: 3, title: "Multi-Stage Docker Builds: Shrinking Node.js Images from 1.2GB to 90MB", tag: "Docker", tagColor: "#06b6d4", status: "published", views: 1893, date: "Jun 5, 2026"  },
-  { id: 4, title: "GitHub Actions Matrix Strategies for Parallel Test Pipelines",     tag: "CI/CD",    tagColor: "#22c55e", status: "published", views: 1540, date: "May 29, 2026" },
-  { id: 5, title: "Horizontal Pod Autoscaling with Custom Prometheus Metrics",         tag: "Kubernetes", tagColor: "#5046e5", status: "published", views: 1204, date: "May 22, 2026" },
-  { id: 6, title: "Managing Terraform State in Teams: S3 Backend + DynamoDB Locking", tag: "Terraform", tagColor: "#8b5cf6", status: "published", views: 980,  date: "May 15, 2026" },
-  { id: 7, title: "Systemd Socket Activation: Zero-Downtime Service Reloads",         tag: "Linux",    tagColor: "#f59e0b", status: "published", views: 743,  date: "May 9, 2026"  },
-  { id: 8, title: "Draft: KEDA-Based Autoscaling During Canary Deployments",          tag: "Kubernetes", tagColor: "#5046e5", status: "draft",     views: 0,    date: "Jun 12, 2026" },
-  { id: 9, title: "Draft: CloudWatch Composite Alarms for Multi-Signal Rollback",     tag: "AWS",      tagColor: "#f97316", status: "draft",     views: 0,    date: "Jun 11, 2026" },
-  { id: 10, title: "Draft: Building a Lightweight CI Pipeline with Nix + GitHub Actions", tag: "CI/CD", tagColor: "#22c55e", status: "draft",    views: 0,    date: "Jun 9, 2026"  },
-];
+import { mockPosts, type Post } from "../../../data/posts";
 
 type SortKey = "title" | "views" | "date" | "status";
 type SortDir = "asc" | "desc";
@@ -33,7 +11,7 @@ interface Props {
 }
 
 export function PostsView({ search, onEditPost }: Props) {
-  const [posts, setPosts] = useState<Post[]>(ALL_POSTS);
+  const [posts, setPosts] = useState<Post[]>(mockPosts);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");

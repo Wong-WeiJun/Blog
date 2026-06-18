@@ -1,8 +1,6 @@
+import { Link } from "react-router";
 import { ArrowLeft } from "lucide-react";
-
-interface Props {
-  onBack: () => void;
-}
+import { BRAND_EMAIL } from "../../lib/constants";
 
 /* ── typography primitives ─── */
 
@@ -231,7 +229,7 @@ const SECTIONS = [
     content: (
       <>
         <Para>
-          We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date at the top of this document.
+          We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the &quot;Last Updated&quot; date at the top of this document.
         </Para>
         <Para>
           You are advised to review this Privacy Policy periodically for any changes. Changes to this Privacy Policy are effective when they are posted on this page.
@@ -246,7 +244,7 @@ const SECTIONS = [
         <Para>
           If you have any questions about this Privacy Policy, please contact us by email at{" "}
           <a
-            href="mailto:hello@wong.dev"
+            href={`mailto:${BRAND_EMAIL}`}
             style={{
               color: "#a5b4fc",
               textDecoration: "none",
@@ -261,7 +259,7 @@ const SECTIONS = [
               e.currentTarget.style.textDecoration = "none";
             }}
           >
-            hello@wong.dev
+            {BRAND_EMAIL}
           </a>
           .
         </Para>
@@ -272,7 +270,7 @@ const SECTIONS = [
 
 /* ─── root ─── */
 
-export function TextPage({ onBack }: Props) {
+export function TextPage() {
   return (
     <div
       style={{
@@ -298,8 +296,8 @@ export function TextPage({ onBack }: Props) {
           gap: "16px",
         }}
       >
-        <button
-          onClick={onBack}
+        <Link
+          to="/"
           style={{
             display: "flex",
             alignItems: "center",
@@ -312,6 +310,7 @@ export function TextPage({ onBack }: Props) {
             cursor: "pointer",
             padding: 0,
             transition: "color 0.15s",
+            textDecoration: "none",
           }}
           onMouseEnter={(e) =>
             (e.currentTarget.style.color = "#fff")
@@ -322,7 +321,7 @@ export function TextPage({ onBack }: Props) {
         >
           <ArrowLeft size={15} />
           Blog
-        </button>
+        </Link>
         <div
           style={{
             width: "1px",
@@ -352,7 +351,7 @@ export function TextPage({ onBack }: Props) {
       >
         {/* header */}
         <PageH1>Privacy Policy</PageH1>
-        <Metadata>Last Updated: June 12, 2026</Metadata>
+        <Metadata>Last Updated: June 18, 2026</Metadata>
 
         {/* sections */}
         {SECTIONS.map((section, i) => (

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useNavigate } from "react-router";
+import { useAuth } from "../../../lib/auth-context";
 import { AdminSidebar, type AdminView } from "./AdminSidebar";
 import { AdminTopBar } from "./AdminTopBar";
 import { OverviewView } from "./OverviewView";
@@ -8,15 +9,11 @@ import { PlaceholderView } from "./PlaceholderView";
 import { PostEditor } from "./PostEditor";
 import { CommentsView } from "./CommentsView";
 import { AnalyticsView } from "./AnalyticsView";
-import type { AuthUser } from "../../App";
+import { useState } from "react";
 
-interface Props {
-  user?: AuthUser | null;
-  onExit: () => void;
-  onLogout?: () => void;
-}
-
-export function AdminDashboard({ user, onExit, onLogout }: Props) {
+export function AdminDashboard() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [view, setView]                   = useState<AdminView>("overview");
   const [search, setSearch]               = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -26,6 +23,13 @@ export function AdminDashboard({ user, onExit, onLogout }: Props) {
   const handleNavigate = (v: AdminView) => {
     setView(v);
     setSearch("");
+  };
+
+  const handleExit = () => navigate("/");
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
   };
 
   // Post editor takes full screen
@@ -48,7 +52,6 @@ export function AdminDashboard({ user, onExit, onLogout }: Props) {
         activeView={view}
         onNavigate={handleNavigate}
         collapsed={sidebarCollapsed}
-        onViewBlog={onExit}
       />
 
       {/* Main column */}
@@ -70,18 +73,16 @@ export function AdminDashboard({ user, onExit, onLogout }: Props) {
             <span style={{ color: "rgba(255,255,255,0.2)", fontSize: "0.75rem" }}>/</span>
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "rgba(255,255,255,0.6)", textTransform: "capitalize" }}>{view}</span>
             <div style={{ flex: 1 }} />
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "rgba(248,113,113,0.6)", background: "transparent", border: "none", cursor: "pointer", padding: "3px 8px", borderRadius: "5px", transition: "color 0.15s" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(248,113,113,0.6)")}
-              >
-                Sign out
-              </button>
-            )}
             <button
-              onClick={onExit}
+              onClick={handleLogout}
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "rgba(248,113,113,0.6)", background: "transparent", border: "none", cursor: "pointer", padding: "3px 8px", borderRadius: "5px", transition: "color 0.15s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(248,113,113,0.6)")}
+            >
+              Sign out
+            </button>
+            <button
+              onClick={handleExit}
               style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "rgba(255,255,255,0.3)", background: "transparent", border: "none", cursor: "pointer", padding: "3px 8px", borderRadius: "5px", transition: "color 0.15s" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
@@ -93,7 +94,7 @@ export function AdminDashboard({ user, onExit, onLogout }: Props) {
           {/* View renderer */}
           {view === "overview"  && <OverviewView />}
           {view === "posts"     && <PostsView search={search} onEditPost={(t) => { setEditTitle(t); setEditorOpen(true); }} />}
-          {view === "profile"   && <AdminProfileView user={user} />}
+          {view === "profile"   && <AdminProfileView />}
           {view === "comments"  && <CommentsView />}
           {view === "tags"      && <PlaceholderView label="Tags" />}
           {view === "analytics" && <AnalyticsView />}

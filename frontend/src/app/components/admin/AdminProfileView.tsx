@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Camera, Check, CheckCircle2, Loader2 } from "lucide-react";
-import type { AuthUser } from "../../App";
+import { useAuth } from "../../../lib/auth-context";
+import { BRAND_NAME, BRAND_EMAIL } from "../../../lib/constants";
 
 function Field({
   label, value, onChange, type = "text", placeholder, hint, rows, maxLength, readOnly,
@@ -61,6 +62,8 @@ function AvatarUpload({ name }: { name: string }) {
     reader.readAsDataURL(file);
   };
 
+  const firstLetter = name[0]?.toUpperCase() ?? "Y";
+
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
       <div
@@ -72,7 +75,7 @@ function AvatarUpload({ name }: { name: string }) {
         <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: preview ? "transparent" : "linear-gradient(135deg, rgba(80,70,229,0.5), rgba(129,140,248,0.35))", border: hover ? "2px solid #5046e5" : "2px solid rgba(80,70,229,0.45)", overflow: "hidden", transition: "border-color 0.2s", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {preview
             ? <img src={preview} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <span style={{ fontFamily: "'Fraunces', serif", fontSize: "1.75rem", fontWeight: 700, color: "#a5b4fc" }}>{name.slice(0, 1)}</span>
+            : <span style={{ fontFamily: "'Fraunces', serif", fontSize: "1.75rem", fontWeight: 700, color: "#a5b4fc" }}>{firstLetter}</span>
           }
         </div>
         <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(0,0,0,0.55)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "3px", opacity: hover ? 1 : 0, transition: "opacity 0.2s" }}>
@@ -101,15 +104,15 @@ function AvatarUpload({ name }: { name: string }) {
   );
 }
 
-interface Props { user?: AuthUser | null; }
-
-export function AdminProfileView({ user }: Props) {
-  const [name, setName]         = useState(user?.name ?? "Wong");
-  const [username, setUsername] = useState("wongg-dev");
+export function AdminProfileView() {
+  const { user } = useAuth();
+  const displayName = user?.name ?? BRAND_NAME;
+  const [name, setName]         = useState(displayName);
+  const [username, setUsername] = useState("your-handle");
   const [bio, setBio]           = useState("Cloud engineer in progress. Building resilient infrastructure and documenting the journey — one deployment at a time.");
-  const [website, setWebsite]   = useState("https://wong.dev");
-  const [twitter, setTwitter]   = useState("@wong_cloud");
-  const [github, setGithub]     = useState("wongg-dev");
+  const [website, setWebsite]   = useState(`https://${BRAND_EMAIL.split("@")[1] ?? "yourdomain.dev"}`);
+  const [twitter, setTwitter]   = useState("@yourhandle");
+  const [github, setGithub]     = useState("your-github");
   const [loading, setLoading]   = useState(false);
   const [saved, setSaved]       = useState(false);
 
@@ -140,7 +143,7 @@ export function AdminProfileView({ user }: Props) {
           <div style={{ height: "1px", background: "rgba(255,255,255,0.07)" }} />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
             <Field label="Display name" value={name} onChange={setName} placeholder="Your name" maxLength={48} />
-            <Field label="Username" value={username} onChange={setUsername} placeholder="your-handle" hint="wong.dev/@your-handle" maxLength={32} />
+            <Field label="Username" value={username} onChange={setUsername} placeholder="your-handle" hint="yourdomain.dev/@your-handle" maxLength={32} />
           </div>
           <Field label="Bio" value={bio} onChange={setBio} placeholder="Tell readers a bit about yourself…" rows={3} maxLength={200} />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -156,8 +159,8 @@ export function AdminProfileView({ user }: Props) {
         {sectionTitle("Account Info")}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-            <Field label="Email" value={user?.email ?? "hello@wong.dev"} onChange={() => {}} readOnly hint="Contact support to change." />
-            <Field label="Role" value="Blog Owner (Admin)" onChange={() => {}} readOnly />
+            <Field label="Email" value={user?.email ?? BRAND_EMAIL} onChange={() => {}} readOnly hint="Contact support to change." />
+            <Field label="Role" value={user?.role === "admin" ? "Blog Owner (Admin)" : "Reader"} onChange={() => {}} readOnly />
           </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
             <CheckCircle2 size={13} color="#4ade80" />

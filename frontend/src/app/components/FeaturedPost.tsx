@@ -1,6 +1,13 @@
+import { Link } from "react-router";
 import { ArrowRight, Clock, User } from "lucide-react";
+import { getPublishedPosts, type Post } from "../../data/posts";
+import { BRAND_NAME } from "../../lib/constants";
 
-export function FeaturedPost({ onReadMore }: { onReadMore?: () => void }) {
+export function FeaturedPost({ post: postProp }: { post?: Post }) {
+  const post = postProp ?? getPublishedPosts()[0];
+
+  if (!post) return null;
+
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
       <div className="flex items-center gap-3 mb-8">
@@ -8,10 +15,10 @@ export function FeaturedPost({ onReadMore }: { onReadMore?: () => void }) {
         <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
       </div>
 
-      <div
-        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", overflow: "hidden", transition: "border-color 0.2s", cursor: "pointer" }}
+      <Link
+        to={`/blog/${post.slug}`}
+        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", overflow: "hidden", transition: "border-color 0.2s", textDecoration: "none", display: "block" }}
         className="group"
-        onClick={onReadMore}
         onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(80,70,229,0.4)")}
         onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
       >
@@ -39,18 +46,18 @@ export function FeaturedPost({ onReadMore }: { onReadMore?: () => void }) {
           {/* Content */}
           <div style={{ padding: "32px 36px", display: "flex", flexDirection: "column", gap: "14px", flex: 1 }}>
             <div className="flex items-center gap-3">
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", fontWeight: 600, color: "#a5b4fc", background: "rgba(80,70,229,0.18)", border: "1px solid rgba(80,70,229,0.3)", borderRadius: "6px", padding: "3px 10px" }}>
-                Terraform
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", fontWeight: 600, color: post.tagColor, background: `${post.tagColor}18`, border: `1px solid ${post.tagColor}30`, borderRadius: "6px", padding: "3px 10px" }}>
+                {post.tag}
               </span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.35)" }}>5 min read</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.35)" }}>{post.readTime} read</span>
             </div>
 
             <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "clamp(1.4rem, 2.5vw, 1.875rem)", lineHeight: 1.25, color: "#fff", letterSpacing: "-0.015em" }}>
-              Zero-Downtime Blue-Green Deployments with Terraform and AWS ECS
+              {post.title}
             </h2>
 
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", lineHeight: 1.7, color: "rgba(255,255,255,0.55)" }}>
-              Exploring how to orchestrate seamless container deployments using Terraform modules, weighted target groups, and CloudWatch alarms that auto-rollback on p99 spike.
+              {post.excerpt || "Read this featured article to learn more."}
             </p>
 
             {/* Author row */}
@@ -60,21 +67,19 @@ export function FeaturedPost({ onReadMore }: { onReadMore?: () => void }) {
                   <User size={14} color="#a5b4fc" />
                 </div>
                 <div>
-                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff" }}>Wong</p>
-                  <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.65rem", color: "rgba(255,255,255,0.35)" }}>Jun 10, 2026</p>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff" }}>{post.author}</p>
+                  <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.65rem", color: "rgba(255,255,255,0.35)" }}>{post.date}</p>
                 </div>
               </div>
-              <button
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500, color: "#a5b4fc", background: "transparent", border: "none", cursor: "pointer", padding: "6px 0", transition: "gap 0.15s" }}
-                onMouseEnter={(e) => { (e.currentTarget.querySelector("svg") as SVGElement | null)?.setAttribute("style", "transform: translateX(3px); transition: transform 0.15s"); }}
-                onMouseLeave={(e) => { (e.currentTarget.querySelector("svg") as SVGElement | null)?.setAttribute("style", "transform: none; transition: transform 0.15s"); }}
+              <span
+                style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500, color: "#a5b4fc", cursor: "pointer" }}
               >
-                Read more <ArrowRight size={15} />
-              </button>
+                Read more <ArrowRight size={15} className="group-hover:translate-x-[3px] transition-transform duration-150" />
+              </span>
             </div>
           </div>
         </div>
-      </div>
+      </Link>
     </section>
   );
 }

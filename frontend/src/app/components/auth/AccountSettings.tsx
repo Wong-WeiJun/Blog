@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
+import { Link } from "react-router";
 import {
   User, Shield, AlertTriangle, Camera, Check, Eye, EyeOff,
   Monitor, Smartphone, Globe, LogOut, ArrowLeft, Loader2,
   CheckCircle2, X,
 } from "lucide-react";
-import type { AuthUser } from "../../App";
+import { useAuth, type AuthUser } from "../../../lib/auth-context";
+import { BRAND_NAME, BRAND_EMAIL } from "../../../lib/constants";
 
 /* ─── types ─── */
 type SettingsTab = "profile" | "security" | "danger";
@@ -151,6 +153,8 @@ function AvatarUpload() {
     reader.readAsDataURL(file);
   };
 
+  const firstLetter = BRAND_NAME[0]?.toUpperCase() ?? "Y";
+
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
       <div
@@ -169,7 +173,7 @@ function AvatarUpload() {
         }}>
           {preview
             ? <img src={preview} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <span style={{ fontFamily: "'Fraunces', serif", fontSize: "2rem", fontWeight: 700, color: "#a5b4fc" }}>W</span>
+            : <span style={{ fontFamily: "'Fraunces', serif", fontSize: "2rem", fontWeight: 700, color: "#a5b4fc" }}>{firstLetter}</span>
           }
         </div>
 
@@ -225,10 +229,10 @@ function AvatarUpload() {
 /* ─── Profile tab ─── */
 
 function ProfileTab() {
-  const [name, setName] = useState("Wong");
-  const [username, setUsername] = useState("wongg-dev");
+  const [name, setName] = useState(BRAND_NAME);
+  const [username, setUsername] = useState("your-handle");
   const [bio, setBio] = useState("Cloud engineer in progress. Building resilient infra and documenting the journey — one deployment at a time.");
-  const [website, setWebsite] = useState("https://wong.dev");
+  const [website, setWebsite] = useState(`https://${BRAND_EMAIL.split("@")[1] ?? "yourdomain.dev"}`);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -246,7 +250,7 @@ function ProfileTab() {
           <AvatarUpload />
           <div style={{ height: "1px", background: "rgba(255,255,255,0.07)" }} />
           <Field label="Display name" value={name} onChange={setName} placeholder="Your name" maxLength={48} />
-          <Field label="Username" value={username} onChange={setUsername} placeholder="your-handle" hint="wong.dev/@your-handle" maxLength={32} />
+          <Field label="Username" value={username} onChange={setUsername} placeholder="your-handle" hint="yourdomain.dev/@your-handle" maxLength={32} />
           <Field label="Bio" value={bio} onChange={setBio} placeholder="Tell readers a bit about yourself…" rows={4} maxLength={200} />
           <Field label="Website" value={website} onChange={setWebsite} placeholder="https://yoursite.com" type="url" />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -259,7 +263,7 @@ function ProfileTab() {
         <SectionTitle>Email address</SectionTitle>
         <SectionDesc>Your email is private and used only for login and notifications.</SectionDesc>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <Field label="Email" value="hello@wong.dev" onChange={() => {}} type="email" hint="To change your email, contact support." />
+          <Field label="Email" value={BRAND_EMAIL} onChange={() => {}} type="email" hint="To change your email, contact support." />
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
             <CheckCircle2 size={13} color="#4ade80" />
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "#4ade80" }}>Verified</span>
@@ -293,9 +297,9 @@ function StrengthBar({ password }: { password: string }) {
 /* ─── Session card ─── */
 
 const SESSIONS = [
-  { id: 1, device: "MacBook Pro", os: "macOS 15", browser: "Chrome 126", location: "Singapore, SG", current: true,  icon: <Monitor size={16} />, lastSeen: "Now" },
-  { id: 2, device: "iPhone 15 Pro", os: "iOS 17", browser: "Safari Mobile", location: "Singapore, SG", current: false, icon: <Smartphone size={16} />, lastSeen: "2 hours ago" },
-  { id: 3, device: "Unknown Device", os: "Windows 11", browser: "Firefox 127", location: "Jakarta, ID",  current: false, icon: <Globe size={16} />, lastSeen: "3 days ago" },
+  { id: 1, device: "MacBook Pro", os: "macOS 15", browser: "Chrome 126", location: "Local", current: true,  icon: <Monitor size={16} />, lastSeen: "Now" },
+  { id: 2, device: "iPhone 15 Pro", os: "iOS 17", browser: "Safari Mobile", location: "Local", current: false, icon: <Smartphone size={16} />, lastSeen: "2 hours ago" },
+  { id: 3, device: "Unknown Device", os: "Windows 11", browser: "Firefox 127", location: "Remote",  current: false, icon: <Globe size={16} />, lastSeen: "3 days ago" },
 ];
 
 function SessionRow({ session, onRevoke }: { session: typeof SESSIONS[0]; onRevoke: (id: number) => void }) {
@@ -398,7 +402,7 @@ function SecurityTab() {
 
 /* ─── Delete confirm modal ─── */
 
-function DeleteModal({ email, onCancel, onConfirm }: { email: string; onCancel: () => void; onConfirm: () => void }) {
+function DeleteModal({ email, onCancel, onConfirm }: { email: string; onCancel: () => void; onConfirm: () => void; }) {
   const [typed, setTyped] = useState("");
   const [loading, setLoading] = useState(false);
   const matches = typed.trim().toLowerCase() === email.toLowerCase();
@@ -545,7 +549,7 @@ function DangerTab() {
 
       {showModal && (
         <DeleteModal
-          email="hello@wong.dev"
+          email={BRAND_EMAIL}
           onCancel={() => setShowModal(false)}
           onConfirm={() => { setShowModal(false); setDeleted(true); }}
         />
@@ -562,11 +566,15 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: "danger",   label: "Danger Zone",  icon: <AlertTriangle size={15} /> },
 ];
 
-interface Props { onBack: () => void; user?: AuthUser | null; onLogout?: () => void; }
+interface Props {
+  user?: AuthUser | null;
+}
 
-export function AccountSettings({ onBack, user, onLogout }: Props) {
+export function AccountSettings({ user: propUser }: Props = {}) {
+  const { user: authUser, logout } = useAuth();
+  const user = propUser ?? authUser;
   const [tab, setTab] = useState<SettingsTab>("profile");
-  const displayName = user?.name ?? "Wong";
+  const displayName = user?.name ?? BRAND_NAME;
   const displayRole = user?.role === "admin" ? "Blog Owner" : "Reader";
   const avatarColor = user?.role === "admin" ? { bg: "linear-gradient(135deg, rgba(80,70,229,0.5), rgba(129,140,248,0.35))", border: "rgba(80,70,229,0.5)", text: "#a5b4fc" } : { bg: "linear-gradient(135deg, rgba(110,231,183,0.4), rgba(52,211,153,0.3))", border: "rgba(110,231,183,0.5)", text: "#6ee7b7" };
 
@@ -576,11 +584,11 @@ export function AccountSettings({ onBack, user, onLogout }: Props) {
 
       {/* Top bar */}
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: "60px", display: "flex", alignItems: "center", gap: "16px", position: "sticky", top: 0, background: "rgba(8,10,26,0.9)", backdropFilter: "blur(12px)", zIndex: 50 }}>
-        <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", background: "none", border: "none", cursor: "pointer", padding: 0, transition: "color 0.15s" }}
+        <Link to="/" style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", background: "none", border: "none", cursor: "pointer", padding: 0, transition: "color 0.15s", textDecoration: "none" }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")} onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
         >
           <ArrowLeft size={15} />Back
-        </button>
+        </Link>
         <div style={{ width: "1px", height: "18px", background: "rgba(255,255,255,0.1)" }} />
         <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.0625rem", color: "#fff" }}>Account Settings</span>
       </div>
@@ -630,16 +638,14 @@ export function AccountSettings({ onBack, user, onLogout }: Props) {
                 <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.62rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>{displayRole}</p>
               </div>
             </div>
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", padding: "7px 8px", background: "transparent", border: "1px solid rgba(248,113,113,0.2)", borderRadius: "7px", fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "rgba(248,113,113,0.7)", cursor: "pointer", transition: "all 0.15s" }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.08)"; e.currentTarget.style.color = "#f87171"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(248,113,113,0.7)"; }}
-              >
-                <LogOut size={12} />Sign out
-              </button>
-            )}
+            <button
+              onClick={logout}
+              style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", padding: "7px 8px", background: "transparent", border: "1px solid rgba(248,113,113,0.2)", borderRadius: "7px", fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "rgba(248,113,113,0.7)", cursor: "pointer", transition: "all 0.15s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.08)"; e.currentTarget.style.color = "#f87171"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(248,113,113,0.7)"; }}
+            >
+              <LogOut size={12} />Sign out
+            </button>
           </div>
         </aside>
 

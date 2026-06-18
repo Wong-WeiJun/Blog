@@ -1,30 +1,31 @@
 import { useState } from "react";
+import { useNavigate, Link } from "react-router";
 import { Eye, EyeOff, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Check } from "lucide-react";
+import { useAuth } from "../../../lib/auth-context";
+import { BRAND_NAME, BRAND_DOMAIN } from "../../../lib/constants";
 
 /* ─── shared primitives ─── */
 
 type AuthScreen = "login" | "register" | "reset";
 
-export type UserRole = "admin" | "user";
+type UserRole = "admin" | "user";
 
 const CREDENTIALS: Record<UserRole, { email: string; password: string; name: string }> = {
-  admin: { email: "hello@wong.dev",  password: "Password1!", name: "Wong" },
-  user:  { email: "reader@gmail.com", password: "Reader123!", name: "Alex" },
+  admin: { email: "hello@yourdomain.dev",  password: "Password1!", name: "Admin" },
+  user:  { email: "reader@example.com", password: "Reader123!", name: "Reader" },
 };
 
 interface NavProps {
   onSwitch: (s: AuthScreen) => void;
-  onBack: () => void;
-  onLoginSuccess?: (role: UserRole) => void;
 }
 
 function Logo() {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", marginBottom: "32px" }}>
       <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "linear-gradient(135deg, #5046e5, #818cf8)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 24px rgba(80,70,229,0.4)" }}>
-        <span style={{ fontFamily: "'Fraunces', serif", fontSize: "1.375rem", fontWeight: 700, color: "#fff" }}>W</span>
+        <span style={{ fontFamily: "'Fraunces', serif", fontSize: "1.375rem", fontWeight: 700, color: "#fff" }}>{BRAND_NAME[0]?.toUpperCase() ?? "Y"}</span>
       </div>
-      <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.25rem", color: "#fff", letterSpacing: "-0.01em" }}>wong.dev</span>
+      <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.25rem", color: "#fff", letterSpacing: "-0.01em" }}>{BRAND_DOMAIN}</span>
     </div>
   );
 }
@@ -175,12 +176,14 @@ function PasswordStrength({ password }: { password: string }) {
 
 /* ─── 1. Login ─── */
 
-function LoginPage({ onSwitch, onLoginSuccess }: NavProps) {
+function LoginPage({ onSwitch }: NavProps) {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const autofill = (role: UserRole) => {
     setEmail(CREDENTIALS[role].email);
@@ -198,7 +201,9 @@ function LoginPage({ onSwitch, onLoginSuccess }: NavProps) {
       const match = (Object.entries(CREDENTIALS) as [UserRole, typeof CREDENTIALS[UserRole]][])
         .find(([, c]) => c.email === email.trim().toLowerCase() && c.password === password);
       if (match) {
-        onLoginSuccess?.(match[0]);
+        login(match[0]);
+        if (match[0] === "admin") navigate("/admin");
+        else navigate("/");
       } else {
         setError("Incorrect email or password. Please try again.");
       }
@@ -279,7 +284,7 @@ function LoginPage({ onSwitch, onLoginSuccess }: NavProps) {
       <Divider label="or" />
 
       <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", textAlign: "center", margin: 0 }}>
-        Don't have an account?{" "}
+        Don&apos;t have an account?{" "}
         <button
           onClick={() => onSwitch("register")}
           style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 600, color: "#a5b4fc", background: "none", border: "none", cursor: "pointer", padding: 0, transition: "color 0.15s" }}
@@ -357,7 +362,7 @@ function RegisterPage({ onSwitch }: NavProps) {
       <Logo />
       <div style={{ marginBottom: "24px", textAlign: "center" }}>
         <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.5rem", color: "#fff", margin: "0 0 6px", letterSpacing: "-0.015em" }}>Create an account</h1>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", margin: 0 }}>Join wong.dev to comment & bookmark posts</p>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", margin: 0 }}>Join {BRAND_DOMAIN} to comment & bookmark posts</p>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -431,7 +436,7 @@ function ResetPage({ onSwitch }: NavProps) {
             <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.875rem", color: "#a5b4fc", margin: 0 }}>{email}</p>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", margin: 0, lineHeight: 1.6, maxWidth: "290px" }}>
-            you'll receive a password reset link shortly. Check your spam folder if it doesn't arrive.
+            you&apos;ll receive a password reset link shortly. Check your spam folder if it doesn&apos;t arrive.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
             <button
@@ -462,7 +467,7 @@ function ResetPage({ onSwitch }: NavProps) {
       <div style={{ marginBottom: "24px", textAlign: "center" }}>
         <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.5rem", color: "#fff", margin: "0 0 6px", letterSpacing: "-0.015em" }}>Reset your password</h1>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", margin: 0, lineHeight: 1.6 }}>
-          Enter your email and we'll send you a reset link.
+          Enter your email and we&apos;ll send you a reset link.
         </p>
       </div>
 
@@ -512,16 +517,10 @@ function TabBar({ active, onSwitch }: { active: AuthScreen; onSwitch: (s: AuthSc
 
 /* ─── Root export ─── */
 
-interface AuthPagesProps {
-  onBack: () => void;
-  onLoginSuccess?: (role: UserRole) => void;
-  initialScreen?: AuthScreen;
-}
-
-export function AuthPages({ onBack, onLoginSuccess, initialScreen = "login" }: AuthPagesProps) {
+export function AuthPages({ initialScreen = "login" }: { initialScreen?: AuthScreen }) {
   const [screen, setScreen] = useState<AuthScreen>(initialScreen);
 
-  const nav: NavProps = { onSwitch: setScreen, onBack, onLoginSuccess };
+  const nav: NavProps = { onSwitch: setScreen };
 
   return (
     <div
@@ -543,15 +542,15 @@ export function AuthPages({ onBack, onLoginSuccess, initialScreen = "login" }: A
       <TabBar active={screen} onSwitch={setScreen} />
 
       {/* Back to blog */}
-      <button
-        onClick={onBack}
-        style={{ position: "fixed", top: "20px", left: "24px", display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "rgba(255,255,255,0.4)", background: "transparent", border: "none", cursor: "pointer", padding: "6px 0", transition: "color 0.15s", zIndex: 100 }}
+      <Link
+        to="/"
+        style={{ position: "fixed", top: "20px", left: "24px", display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "rgba(255,255,255,0.4)", textDecoration: "none", padding: "6px 0", transition: "color 0.15s", zIndex: 100 }}
         onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
         onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
       >
         <ArrowLeft size={14} />
         Blog
-      </button>
+      </Link>
 
       {/* Card */}
       <div style={{ width: "100%", display: "flex", justifyContent: "center", position: "relative", zIndex: 1 }}>

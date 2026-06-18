@@ -1,30 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { FileText, Eye, MessageSquare, Clock, TrendingUp, TrendingDown } from "lucide-react";
-
-const WEEKLY_DATA = [
-  { day: "Mon", views: 420 },
-  { day: "Tue", views: 680 },
-  { day: "Wed", views: 530 },
-  { day: "Thu", views: 910 },
-  { day: "Fri", views: 1240 },
-  { day: "Sat", views: 780 },
-  { day: "Sun", views: 620 },
-];
-
-const TOP_POSTS = [
-  { title: "Zero-Downtime Blue-Green Deployments with Terraform", views: 2847, max: 2847 },
-  { title: "Multi-Stage Docker Builds: From 1.2GB to 90MB",       views: 2110, max: 2847 },
-  { title: "GitHub Actions Matrix for Parallel Test Pipelines",    views: 1893, max: 2847 },
-  { title: "HPA with Custom Prometheus Metrics in K8s",            views: 1540, max: 2847 },
-  { title: "Managing Terraform State in Teams",                    views: 1204, max: 2847 },
-];
-
-const STAT_CARDS = [
-  { label: "Total Posts",   value: "24",    delta: "+3 this month",     up: true,  icon: <FileText size={18} />,      color: "#5046e5" },
-  { label: "Total Views",   value: "18.4k", delta: "+12% vs last week", up: true,  icon: <Eye size={18} />,           color: "#06b6d4" },
-  { label: "Comments",      value: "142",   delta: "+7 this week",      up: true,  icon: <MessageSquare size={18} />, color: "#22c55e" },
-  { label: "Avg Read Time", value: "6.2m",  delta: "-0.3m vs avg",      up: false, icon: <Clock size={18} />,         color: "#f59e0b" },
-];
+import { mockPosts, INITIAL_COMMENTS } from "../../../data/posts";
 
 function StatCard({ card }: { card: typeof STAT_CARDS[0] }) {
   return (
@@ -53,6 +29,16 @@ function StatCard({ card }: { card: typeof STAT_CARDS[0] }) {
     </div>
   );
 }
+
+const WEEKLY_DATA = [
+  { day: "Mon", views: 420 },
+  { day: "Tue", views: 680 },
+  { day: "Wed", views: 530 },
+  { day: "Thu", views: 910 },
+  { day: "Fri", views: 1240 },
+  { day: "Sat", views: 780 },
+  { day: "Sun", views: 620 },
+];
 
 /** Pure SVG/div bar chart — no recharts, no key collisions. */
 function WeeklyBarChart() {
@@ -193,6 +179,60 @@ function WeeklyBarChart() {
 }
 
 export function OverviewView() {
+  const statData = useMemo(() => {
+    const published = mockPosts.filter((p) => p.status === "published");
+    const totalViews = published.reduce((s, p) => s + p.views, 0);
+    const topPosts = [...published]
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 5);
+    const maxViews = topPosts[0]?.views ?? 1;
+
+    return {
+      totalPosts: published.length,
+      totalViews,
+      commentCount: INITIAL_COMMENTS.length,
+      topPosts,
+      maxViews,
+    };
+  }, []);
+
+  const STAT_CARDS = [
+    {
+      label: "Total Posts",
+      value: String(statData.totalPosts),
+      delta: "+3 this month",
+      up: true,
+      icon: <FileText size={18} />,
+      color: "#5046e5",
+    },
+    {
+      label: "Total Views",
+      value: statData.totalViews >= 1000
+        ? `${(statData.totalViews / 1000).toFixed(1)}k`
+        : String(statData.totalViews),
+      delta: "+12% vs last week",
+      up: true,
+      icon: <Eye size={18} />,
+      color: "#06b6d4",
+    },
+    {
+      label: "Comments",
+      value: String(statData.commentCount),
+      delta: "+7 this week",
+      up: true,
+      icon: <MessageSquare size={18} />,
+      color: "#22c55e",
+    },
+    {
+      label: "Avg Read Time",
+      value: "6.2m",
+      delta: "-0.3m vs avg",
+      up: false,
+      icon: <Clock size={18} />,
+      color: "#f59e0b",
+    },
+  ];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Stat cards */}
@@ -216,8 +256,8 @@ export function OverviewView() {
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>By all-time views</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            {TOP_POSTS.map((post, i) => (
-              <div key={`post-${i}`} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {statData.topPosts.map((post, i) => (
+              <div key={`post-${post.id}`} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
                   <div style={{ display: "flex", gap: "8px", flex: 1, minWidth: 0 }}>
                     <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: 600, color: "rgba(80,70,229,0.7)", flexShrink: 0, paddingTop: "1px", minWidth: "16px" }}>
@@ -232,7 +272,7 @@ export function OverviewView() {
                   </span>
                 </div>
                 <div style={{ height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "999px", overflow: "hidden", marginLeft: "24px" }}>
-                  <div style={{ height: "100%", width: `${(post.views / post.max) * 100}%`, background: i === 0 ? "#5046e5" : "rgba(80,70,229,0.45)", borderRadius: "999px", transition: "width 0.6s ease" }} />
+                  <div style={{ height: "100%", width: `${(post.views / statData.maxViews) * 100}%`, background: i === 0 ? "#5046e5" : "rgba(80,70,229,0.45)", borderRadius: "999px", transition: "width 0.6s ease" }} />
                 </div>
               </div>
             ))}

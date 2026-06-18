@@ -1,12 +1,10 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
+import { Link } from "react-router";
 import {
   Mail, Github, Linkedin, Copy, Check, Send, ArrowLeft,
   AlertCircle, CheckCircle2, Loader2, Twitter, MessageSquare,
 } from "lucide-react";
-
-interface Props {
-  onBack: () => void;
-}
+import { BRAND_EMAIL } from "../../lib/constants";
 
 /* ── field ── */
 function Field({
@@ -66,7 +64,7 @@ function HCaptchaPlaceholder({ checked, onCheck }: { checked: boolean; onCheck: 
           {checked && <Check size={13} color="#fff" strokeWidth={3} />}
         </button>
         <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.65)" }}>
-          I'm not a robot
+          I&apos;m not a robot
         </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
@@ -91,7 +89,7 @@ function SuccessCard({ onReset }: { onReset: () => void }) {
           Message sent!
         </h3>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", color: "rgba(255,255,255,0.5)", margin: 0, lineHeight: 1.65 }}>
-          Thanks for reaching out. I'll get back to you within 1–2 business days.
+          Thanks for reaching out. I&apos;ll get back to you within 1–2 business days.
         </p>
       </div>
       <button
@@ -109,7 +107,7 @@ function SuccessCard({ onReset }: { onReset: () => void }) {
 /* ── contact info column ── */
 function ContactInfo() {
   const [copied, setCopied] = useState(false);
-  const email = "hello@wong.dev";
+  const email = BRAND_EMAIL;
 
   const copy = () => {
     navigator.clipboard.writeText(email);
@@ -118,9 +116,9 @@ function ContactInfo() {
   };
 
   const links = [
-    { icon: <Github size={18} />, label: "GitHub", handle: "@wongg-dev" },
-    { icon: <Linkedin size={18} />, label: "LinkedIn", handle: "wong-cloud" },
-    { icon: <Twitter size={18} />, label: "Twitter / X", handle: "@wong_cloud" },
+    { icon: <Github size={18} />, label: "GitHub" },
+    { icon: <Linkedin size={18} />, label: "LinkedIn" },
+    { icon: <Twitter size={18} />, label: "Twitter / X" },
   ];
 
   return (
@@ -130,10 +128,10 @@ function ContactInfo() {
           Get in touch
         </p>
         <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "clamp(1.9rem, 4vw, 2.75rem)", color: "#fff", margin: "0 0 16px", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-          Let's start a<br />conversation
+          Let&apos;s start a<br />conversation
         </h1>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "1.0625rem", lineHeight: 1.75, color: "rgba(255,255,255,0.55)", margin: 0, maxWidth: "360px" }}>
-          Whether it's a job opportunity, collaboration, feedback on a post, or just saying hi — I read every message and reply to most.
+          Whether it&apos;s a job opportunity, collaboration, feedback on a post, or just saying hi — I read every message and reply to most.
         </p>
       </div>
 
@@ -168,7 +166,7 @@ function ContactInfo() {
               <span style={{ color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>{l.icon}</span>
               <div style={{ flex: 1 }}>
                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "rgba(255,255,255,0.5)", margin: 0 }}>{l.label}</p>
-                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.2)", margin: 0 }}>{l.handle}</p>
+                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.2)", margin: 0 }}>Coming soon</p>
               </div>
             </span>
           ))}
@@ -179,7 +177,7 @@ function ContactInfo() {
       <div style={{ display: "flex", gap: "10px", padding: "14px 16px", background: "rgba(80,70,229,0.07)", border: "1px solid rgba(80,70,229,0.2)", borderRadius: "10px" }}>
         <MessageSquare size={16} color="#a5b4fc" style={{ flexShrink: 0, marginTop: "1px" }} />
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", lineHeight: 1.6, color: "rgba(255,255,255,0.5)", margin: 0 }}>
-          Typical reply time: <strong style={{ color: "#a5b4fc" }}>1–2 business days.</strong> For urgent matters, DM me on Twitter.
+          Typical reply time: <strong style={{ color: "#a5b4fc" }}>1–2 business days.</strong> For urgent matters, DM on social media.
         </p>
       </div>
     </div>
@@ -215,7 +213,6 @@ function ContactForm() {
     if (Object.keys(e).length) return;
 
     setLoading(true);
-    // Simulate: 20% chance of server error for demo
     setTimeout(() => {
       setLoading(false);
       if (Math.random() < 0.15) {
@@ -271,19 +268,19 @@ function ContactForm() {
 }
 
 /* ── root ── */
-export function ContactPage({ onBack }: Props) {
+export function ContactPage() {
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #080a1a 0%, #0a0c1e 45%, #060818 100%)", color: "#fff", fontFamily: "'Inter', sans-serif" }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Top bar */}
       <div style={{ position: "sticky", top: 0, zIndex: 50, borderBottom: "1px solid rgba(255,255,255,0.07)", background: "rgba(8,10,26,0.92)", backdropFilter: "blur(12px)", height: "52px", display: "flex", alignItems: "center", padding: "0 32px", gap: "16px" }}>
-        <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", background: "none", border: "none", cursor: "pointer", padding: 0, transition: "color 0.15s" }}
+        <Link to="/" style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.45)", background: "none", border: "none", cursor: "pointer", padding: 0, transition: "color 0.15s", textDecoration: "none" }}
           onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
           onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
         >
           <ArrowLeft size={15} />Blog
-        </button>
+        </Link>
         <div style={{ width: "1px", height: "18px", background: "rgba(255,255,255,0.1)" }} />
         <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1rem", color: "#fff" }}>Contact</span>
       </div>

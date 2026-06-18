@@ -1,12 +1,17 @@
 import React from "react";
-import { LayoutDashboard, FileText, MessageSquare, Tag, BarChart2, ExternalLink, UserCircle } from "lucide-react";
+import { useNavigate } from "react-router";
+import {
+  LayoutDashboard, FileText, MessageSquare, Tag, BarChart2,
+  ExternalLink, UserCircle,
+} from "lucide-react";
+import { BRAND_NAME, BRAND_DOMAIN } from "../../../lib/constants";
 
 export type AdminView = "overview" | "posts" | "comments" | "tags" | "analytics" | "profile";
 
 const NAV_ITEMS: { id: AdminView; label: string; icon: React.ReactNode; badge?: number; dividerBefore?: boolean }[] = [
   { id: "overview",   label: "Overview",  icon: <LayoutDashboard size={16} /> },
-  { id: "posts",      label: "Posts",     icon: <FileText size={16} />,       badge: 3 },
-  { id: "comments",   label: "Comments",  icon: <MessageSquare size={16} />,  badge: 7 },
+  { id: "posts",      label: "Posts",     icon: <FileText size={16} />,       badge: 0 },
+  { id: "comments",   label: "Comments",  icon: <MessageSquare size={16} />,  badge: 0 },
   { id: "tags",       label: "Tags",      icon: <Tag size={16} /> },
   { id: "analytics",  label: "Analytics", icon: <BarChart2 size={16} /> },
   { id: "profile",    label: "Profile",   icon: <UserCircle size={16} />,     dividerBefore: true },
@@ -16,10 +21,12 @@ interface Props {
   activeView: AdminView;
   onNavigate: (v: AdminView) => void;
   collapsed: boolean;
-  onViewBlog?: () => void;
 }
 
-export function AdminSidebar({ activeView, onNavigate, collapsed, onViewBlog }: Props) {
+export function AdminSidebar({ activeView, onNavigate, collapsed }: Props) {
+  const navigate = useNavigate();
+  const firstLetter = BRAND_NAME[0]?.toUpperCase() ?? "Y";
+
   return (
     <aside
       style={{
@@ -61,11 +68,11 @@ export function AdminSidebar({ activeView, onNavigate, collapsed, onViewBlog }: 
             flexShrink: 0,
           }}
         >
-          <span style={{ fontFamily: "'Fraunces', serif", fontSize: "0.875rem", fontWeight: 700, color: "#fff" }}>W</span>
+          <span style={{ fontFamily: "'Fraunces', serif", fontSize: "0.875rem", fontWeight: 700, color: "#fff" }}>{firstLetter}</span>
         </div>
         {!collapsed && (
           <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.125rem", color: "#fff", whiteSpace: "nowrap" }}>
-            wong.dev
+            {BRAND_DOMAIN}
           </span>
         )}
       </div>
@@ -119,14 +126,14 @@ export function AdminSidebar({ activeView, onNavigate, collapsed, onViewBlog }: 
                   <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: active ? 600 : 400, flex: 1, textAlign: "left", whiteSpace: "nowrap" }}>
                     {item.label}
                   </span>
-                  {item.badge !== undefined && (
+                  {item.badge !== undefined && item.badge > 0 && (
                     <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.65rem", fontWeight: 600, background: active ? "rgba(80,70,229,0.35)" : "rgba(255,255,255,0.08)", color: active ? "#a5b4fc" : "rgba(255,255,255,0.4)", borderRadius: "999px", padding: "1px 7px" }}>
                       {item.badge}
                     </span>
                   )}
                 </>
               )}
-              {collapsed && item.badge !== undefined && (
+              {collapsed && item.badge !== undefined && item.badge > 0 && (
                 <div style={{ position: "absolute", top: "6px", right: "6px", width: "7px", height: "7px", borderRadius: "50%", background: "#5046e5" }} />
               )}
             </button>
@@ -139,7 +146,7 @@ export function AdminSidebar({ activeView, onNavigate, collapsed, onViewBlog }: 
       {!collapsed && (
         <div style={{ padding: "0 10px 12px" }}>
           <button
-            onClick={onViewBlog}
+            onClick={() => navigate("/")}
             style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "8px 12px", borderRadius: "8px", fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "rgba(255,255,255,0.35)", background: "transparent", border: "none", cursor: "pointer", transition: "color 0.15s, background 0.15s", textAlign: "left" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.7)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.35)"; e.currentTarget.style.background = "transparent"; }}
@@ -153,11 +160,11 @@ export function AdminSidebar({ activeView, onNavigate, collapsed, onViewBlog }: 
       {/* User profile */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "14px 12px", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
         <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "linear-gradient(135deg, rgba(80,70,229,0.5), rgba(129,140,248,0.4))", border: "1.5px solid rgba(80,70,229,0.5)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <span style={{ fontFamily: "'Fraunces', serif", fontSize: "0.875rem", fontWeight: 700, color: "#a5b4fc" }}>W</span>
+          <span style={{ fontFamily: "'Fraunces', serif", fontSize: "0.875rem", fontWeight: 700, color: "#a5b4fc" }}>{firstLetter}</span>
         </div>
         {!collapsed && (
           <div style={{ overflow: "hidden" }}>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Wong</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{BRAND_NAME}</p>
             <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.65rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>Blog Owner</p>
           </div>
         )}

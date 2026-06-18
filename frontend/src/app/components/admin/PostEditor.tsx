@@ -4,6 +4,7 @@ import {
   ImagePlus, Quote, Save, Send, Eye, X, Upload, Globe,
   Calendar, Star, ChevronDown, Loader2, Check,
 } from "lucide-react";
+import { BRAND_DOMAIN } from "../../../lib/constants";
 
 /* ───────────────────────────── types ───────────────────────────── */
 
@@ -379,7 +380,7 @@ function SeoPanel({ title }: { title: string }) {
         </div>
         <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.025)" }}>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.65rem", color: "rgba(255,255,255,0.3)", margin: "0 0 3px", display: "flex", alignItems: "center", gap: "4px" }}>
-            <Globe size={9} />wong.dev
+            <Globe size={9} />{BRAND_DOMAIN}
           </p>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", margin: "0 0 3px", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {effectiveTitle || "Post title"}

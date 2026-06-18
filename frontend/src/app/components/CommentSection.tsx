@@ -1,77 +1,8 @@
 import { useState } from "react";
 import { ThumbsUp, Reply, MessageSquare, Send, ChevronDown, ChevronUp } from "lucide-react";
-
-interface Comment {
-  id: number;
-  author: string;
-  isOwner: boolean;
-  avatar: string;
-  date: string;
-  body: string;
-  likes: number;
-  liked: boolean;
-  replies: Comment[];
-}
-
-const INITIAL_COMMENTS: Comment[] = [
-  {
-    id: 1,
-    author: "Sarah Chen",
-    isOwner: false,
-    avatar: "SC",
-    date: "Jun 11, 2026",
-    body: "This is exactly the write-up I needed. I've been wrestling with the target group drain timeout causing 30-second blips during deploys. Setting `deregistration_delay` to match the ALB idle timeout finally clicked after reading your config.",
-    likes: 14,
-    liked: false,
-    replies: [
-      {
-        id: 11,
-        author: "Wong",
-        isOwner: true,
-        avatar: "W",
-        date: "Jun 11, 2026",
-        body: "Glad it helped! The drain timeout is the most common gotcha — I forgot to mention you also want to bump `health_check.healthy_threshold` down to 2 so the new target group goes healthy faster. Will add that to the post.",
-        likes: 6,
-        liked: false,
-        replies: [],
-      },
-    ],
-  },
-  {
-    id: 2,
-    author: "Marcus Rivera",
-    isOwner: false,
-    avatar: "MR",
-    date: "Jun 10, 2026",
-    body: "Question: does this approach work with Fargate Spot capacity? I'm worried about Spot interruptions mid-switch causing a hard cutover instead of a graceful one.",
-    likes: 8,
-    liked: false,
-    replies: [
-      {
-        id: 21,
-        author: "Wong",
-        isOwner: true,
-        avatar: "W",
-        date: "Jun 10, 2026",
-        body: "Great question — Spot interruptions send a 2-minute warning via ECS task-state events. You can wire up an EventBridge rule to temporarily pin weight to the old TG, then resume after the replacement task is healthy. I'll write a follow-up on that.",
-        likes: 11,
-        liked: false,
-        replies: [],
-      },
-      {
-        id: 22,
-        author: "Priya Nair",
-        isOwner: false,
-        avatar: "PN",
-        date: "Jun 10, 2026",
-        body: "Adding to this — we use a mix of On-Demand for the switch window and Spot for steady-state. Capacity provider strategies with `base` on On-Demand handle it cleanly.",
-        likes: 5,
-        liked: false,
-        replies: [],
-      },
-    ],
-  },
-];
+import type { Comment } from "../../data/posts";
+import { INITIAL_COMMENTS } from "../../data/posts";
+import { BRAND_NAME } from "../../lib/constants";
 
 function AvatarCircle({ initials, isOwner }: { initials: string; isOwner: boolean }) {
   return (
@@ -206,7 +137,7 @@ function CommentCard({ comment, depth = 0 }: { comment: Comment; depth?: number 
         {/* Reply textarea */}
         {showReply && (
           <div style={{ marginTop: "12px", display: "flex", gap: "10px" }}>
-            <AvatarCircle initials="Y" isOwner={false} />
+            <AvatarCircle initials={BRAND_NAME[0]?.toUpperCase() ?? "Y"} isOwner={false} />
             <div style={{ flex: 1, display: "flex", gap: "8px" }}>
               <textarea
                 value={replyText}
@@ -285,7 +216,7 @@ export function CommentSection() {
           id: Date.now(),
           author: "You",
           isOwner: false,
-          avatar: "Y",
+          avatar: BRAND_NAME[0]?.toUpperCase() ?? "Y",
           date: "Just now",
           body: newComment,
           likes: 0,

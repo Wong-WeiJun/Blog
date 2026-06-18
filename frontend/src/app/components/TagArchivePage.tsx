@@ -1,19 +1,17 @@
 import { useState, useMemo } from "react";
+import { useParams, useNavigate, Link } from "react-router";
 import { ArrowLeft } from "lucide-react";
-import { posts, PostCard, SkeletonCard } from "./PostGrid";
+import { getPostsByTag } from "../../data/posts";
+import { PostCard, SkeletonCard } from "./PostGrid";
 
-interface Props {
-  tag: string;
-  onBack: () => void;
-  onOpenPost?: () => void;
-}
-
-export function TagArchivePage({ tag, onBack, onOpenPost }: Props) {
+export function TagArchivePage() {
+  const { tag } = useParams<{ tag: string }>();
+  const navigate = useNavigate();
   const [visibleCount, setVisibleCount] = useState(4);
   const [loading, setLoading] = useState(false);
 
   const filtered = useMemo(
-    () => posts.filter((p) => p.tag === tag),
+    () => (tag ? getPostsByTag(tag) : []),
     [tag]
   );
   const visible = filtered.slice(0, visibleCount);
@@ -26,7 +24,7 @@ export function TagArchivePage({ tag, onBack, onOpenPost }: Props) {
     }, 800);
   };
 
-  const tagColor = filtered[0]?.color ?? "#a5b4fc";
+  const tagColor = filtered[0]?.tagColor ?? "#a5b4fc";
 
   return (
     <div
@@ -38,7 +36,7 @@ export function TagArchivePage({ tag, onBack, onOpenPost }: Props) {
         fontFamily: "'Inter', sans-serif",
       }}
     >
-      {/* ── top bar ── */}
+      {/* top bar */}
       <div
         style={{
           position: "sticky",
@@ -54,8 +52,8 @@ export function TagArchivePage({ tag, onBack, onOpenPost }: Props) {
           gap: "16px",
         }}
       >
-        <button
-          onClick={onBack}
+        <Link
+          to="/"
           style={{
             display: "flex",
             alignItems: "center",
@@ -68,6 +66,7 @@ export function TagArchivePage({ tag, onBack, onOpenPost }: Props) {
             cursor: "pointer",
             padding: 0,
             transition: "color 0.15s",
+            textDecoration: "none",
           }}
           onMouseEnter={(e) =>
             (e.currentTarget.style.color = "#fff")
@@ -78,7 +77,7 @@ export function TagArchivePage({ tag, onBack, onOpenPost }: Props) {
         >
           <ArrowLeft size={15} />
           Blog
-        </button>
+        </Link>
         <div
           style={{
             width: "1px",
@@ -98,7 +97,7 @@ export function TagArchivePage({ tag, onBack, onOpenPost }: Props) {
         </span>
       </div>
 
-      {/* ── main content ── */}
+      {/* main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div
@@ -165,7 +164,7 @@ export function TagArchivePage({ tag, onBack, onOpenPost }: Props) {
         {/* Post grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {visible.map((post) => (
-            <PostCard key={post.id} post={post} onOpenPost={onOpenPost} />
+            <PostCard key={post.id} post={post} />
           ))}
           {loading &&
             [1, 2].map((i) => <SkeletonCard key={`sk-${i}`} />)}
@@ -198,7 +197,7 @@ export function TagArchivePage({ tag, onBack, onOpenPost }: Props) {
                 margin: 0,
               }}
             >
-              There are no posts tagged with "{tag}" yet.
+              There are no posts tagged with &quot;{tag}&quot; yet.
             </p>
           </div>
         )}

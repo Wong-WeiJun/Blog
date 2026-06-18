@@ -1,18 +1,15 @@
+import { Link } from "react-router";
 import { Home, BookOpen } from "lucide-react";
-
-interface Props {
-  onGoHome: () => void;
-  onBrowsePosts: () => void;
-}
+import { BRAND_DOMAIN } from "../../lib/constants";
 
 const TERMINAL_LINES = [
-  { prompt: true,  text: "curl https://wong.dev/this-page" },
-  { prompt: false, text: '< HTTP/2 404' },
-  { prompt: false, text: '< content-type: text/html' },
+  { prompt: true,  text: `curl https://${BRAND_DOMAIN}/this-page` },
+  { prompt: false, text: "< HTTP/2 404" },
+  { prompt: false, text: "< content-type: text/html" },
   { prompt: false, text: "" },
   { prompt: true,  text: "terraform plan" },
   { prompt: false, text: "│ Error: Invalid resource address" },
-  { prompt: false, text: '│ "page.not_found" does not exist' },
+  { prompt: false, text: '\"page.not_found\" does not exist' },
   { prompt: false, text: "" },
   { prompt: true,  text: "kubectl get page/not-found" },
   { prompt: false, text: 'Error from server (NotFound): pages "not-found" not found' },
@@ -24,7 +21,7 @@ const TERMINAL_LINES = [
   { prompt: false, text: "404" },
 ];
 
-export function NotFoundPage({ onGoHome, onBrowsePosts }: Props) {
+export function NotFoundPage() {
   return (
     <div
       style={{
@@ -117,33 +114,33 @@ export function NotFoundPage({ onGoHome, onBrowsePosts }: Props) {
 
         {/* Message */}
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "1.0625rem", lineHeight: 1.75, color: "rgba(255,255,255,0.5)", margin: "0 0 40px" }}>
-          The page you're looking for doesn't exist, was moved, or perhaps never deployed to production.
-          The logs have been checked — it's not there.
+          The page you&apos;re looking for doesn&apos;t exist, was moved, or perhaps never deployed to production.
+          The logs have been checked — it&apos;s not there.
         </p>
 
         {/* CTAs */}
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
-          <button
-            onClick={onGoHome}
-            style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", fontWeight: 600, color: "#fff", background: "#5046e5", border: "none", borderRadius: "10px", padding: "12px 24px", cursor: "pointer", transition: "background 0.15s, transform 0.1s" }}
+          <Link
+            to="/"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", fontWeight: 600, color: "#fff", background: "#5046e5", border: "none", borderRadius: "10px", padding: "12px 24px", textDecoration: "none", transition: "background 0.15s, transform 0.1s" }}
             onMouseEnter={e => { e.currentTarget.style.background = "#4338ca"; e.currentTarget.style.transform = "translateY(-1px)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "#5046e5"; e.currentTarget.style.transform = "none"; }}
           >
             <Home size={16} /> Go back home
-          </button>
-          <button
-            onClick={onBrowsePosts}
-            style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", fontWeight: 500, color: "rgba(255,255,255,0.75)", background: "transparent", border: "1px solid rgba(255,255,255,0.18)", borderRadius: "10px", padding: "12px 24px", cursor: "pointer", transition: "all 0.15s" }}
+          </Link>
+          <Link
+            to="/"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", fontWeight: 500, color: "rgba(255,255,255,0.75)", background: "transparent", border: "1px solid rgba(255,255,255,0.18)", borderRadius: "10px", padding: "12px 24px", textDecoration: "none", transition: "all 0.15s" }}
             onMouseEnter={e => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.4)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
             onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.75)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)"; e.currentTarget.style.transform = "none"; }}
           >
             <BookOpen size={16} /> Browse posts
-          </button>
+          </Link>
         </div>
 
         {/* Tiny footer note */}
         <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: "rgba(255,255,255,0.2)", marginTop: "48px" }}>
-          exit code 404 · wong.dev
+          exit code 404 · {BRAND_DOMAIN}
         </p>
       </div>
     </div>

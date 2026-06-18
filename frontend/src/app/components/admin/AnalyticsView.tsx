@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { TrendingUp, TrendingDown, Users, Eye, Clock, ArrowUpRight } from "lucide-react";
+import { mockPosts } from "../../../data/posts";
+import { BRAND_DOMAIN } from "../../../lib/constants";
 
 /* ── data ── */
 
@@ -27,21 +29,7 @@ const REFERRERS = [
   { source: "Other",           visits: 85,   share:  1, color: "#475569",  icon: "•" },
 ];
 
-const TOP_POSTS = [
-  { title: "Zero-Downtime Blue-Green Deployments",     views: 2847, delta: +18 },
-  { title: "Multi-Stage Docker Builds: 1.2GB → 90MB", views: 2110, delta: +5  },
-  { title: "GitHub Actions Matrix Strategies",         views: 1893, delta: -3  },
-  { title: "HPA with Custom Prometheus Metrics",       views: 1540, delta: +11 },
-  { title: "Managing Terraform State in Teams",        views: 1204, delta: +2  },
-];
-
 /* ── stat cards ── */
-
-const STATS = [
-  { label: "Total Views",     value: "18,427", delta: "+12.4%", up: true,  icon: <Eye size={16} />,   color: "#5046e5", sub: "last 30 days" },
-  { label: "Unique Visitors", value: "11,082", delta: "+8.9%",  up: true,  icon: <Users size={16} />, color: "#06b6d4", sub: "last 30 days" },
-  { label: "Avg Read Time",   value: "5m 48s", delta: "-0.3m",  up: false, icon: <Clock size={16} />, color: "#f59e0b", sub: "across all posts" },
-];
 
 function StatCard({ s }: { s: typeof STATS[0] }) {
   return (
@@ -243,7 +231,14 @@ function ReferrersPanel() {
 /* ── top posts panel ── */
 
 function TopPostsPanel() {
-  const max = Math.max(...TOP_POSTS.map(p => p.views));
+  const topPosts = useMemo(() => {
+    return [...mockPosts]
+      .filter(p => p.status === "published")
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 5)
+      .map((p, i) => ({ ...p, delta: [18, 5, -3, 11, 2][i] ?? 0 }));
+  }, []);
+  const max = Math.max(...topPosts.map(p => p.views), 1);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -253,8 +248,8 @@ function TopPostsPanel() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        {TOP_POSTS.map((p, i) => (
-          <div key={i} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        {topPosts.map((p, i) => (
+          <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
               <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: 700, color: i === 0 ? "#a5b4fc" : "rgba(80,70,229,0.6)", flexShrink: 0, paddingTop: "1px", minWidth: "16px" }}>
                 {String(i + 1).padStart(2, "0")}
@@ -297,6 +292,17 @@ type Period = typeof PERIODS[number];
 
 export function AnalyticsView() {
   const [period, setPeriod] = useState<Period>("30d");
+
+  const totalViews = useMemo(() =>
+    mockPosts.filter(p => p.status === "published").reduce((s, p) => s + p.views, 0),
+    []
+  );
+
+  const STATS = [
+    { label: "Total Views",     value: totalViews >= 1000 ? `${Math.floor(totalViews / 1000)},${(totalViews % 1000).toString().padStart(3, "0")}` : String(totalViews), delta: "+12.4%", up: true,  icon: <Eye size={16} />,   color: "#5046e5", sub: "last 30 days" },
+    { label: "Unique Visitors", value: "11,082", delta: "+8.9%",  up: true,  icon: <Users size={16} />, color: "#06b6d4", sub: "last 30 days" },
+    { label: "Avg Read Time",   value: "5m 48s", delta: "-0.3m",  up: false, icon: <Clock size={16} />, color: "#f59e0b", sub: "across all posts" },
+  ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>

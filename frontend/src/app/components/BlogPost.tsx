@@ -1,9 +1,12 @@
+import { useState } from "react";
+import { useNavigate, Link } from "react-router";
 import { Eye, Clock, User, ArrowLeft, Share2, Bookmark, Twitter, Link2 } from "lucide-react";
 import { ReadingProgress } from "./ReadingProgress";
 import { TableOfContents, type TocItem } from "./TableOfContents";
 import { CodeBlock, InlineCode } from "./CodeBlock";
 import { CommentSection } from "./CommentSection";
-import { useState } from "react";
+import type { Post } from "../../data/posts";
+import { BRAND_NAME } from "../../lib/constants";
 
 const TOC: TocItem[] = [
   { id: "overview", label: "Overview", level: 2 },
@@ -20,128 +23,13 @@ const TOC: TocItem[] = [
   { id: "conclusion", label: "Conclusion", level: 2 },
 ];
 
-const TERRAFORM_MAIN = `resource "aws_lb_target_group" "blue" {
-  name     = "\${var.service_name}-blue"
-  port     = 8080
-  protocol = "HTTP"
-  vpc_id   = var.vpc_id
+const TERRAFORM_MAIN = `resource "aws_lb_target_group" "blue" {\n  name     = "\\${var.service_name}-blue"\n  port     = 8080\n  protocol = "HTTP"\n  vpc_id   = var.vpc_id\n\n  health_check {\n    path                = "/health"\n    interval            = 15\n    healthy_threshold   = 2\n    unhealthy_threshold = 3\n  }\n\n  deregistration_delay = 30\n}\n\nresource "aws_lb_target_group" "green" {\n  name     = "\\${var.service_name}-green"\n  port     = 8080\n  protocol = "HTTP"\n  vpc_id   = var.vpc_id\n\n  health_check {\n    path                = "/health"\n    interval            = 15\n    healthy_threshold   = 2\n    unhealthy_threshold = 3\n  }\n\n  deregistration_delay = 30\n}`;
 
-  health_check {
-    path                = "/health"
-    interval            = 15
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-  }
+const WEIGHTED_ROUTING = `resource "aws_lb_listener_rule" "weighted" {\n  listener_arn = aws_lb_listener.https.arn\n  priority     = 100\n\n  action {\n    type = "forward"\n\n    forward {\n      target_group {\n        arn    = aws_lb_target_group.blue.arn\n        weight = var.blue_weight  # 100 → 0 during switch\n      }\n      target_group {\n        arn    = aws_lb_target_group.green.arn\n        weight = var.green_weight # 0 → 100 during switch\n      }\n      stickiness {\n        enabled  = true\n        duration = 300\n      }\n    }\n  }\n\n  condition {\n    host_header { values = [var.domain] }\n  }\n}`;
 
-  deregistration_delay = 30
-}
+const GITHUB_ACTIONS = `name: Blue-Green Deploy\n\non:\n  push:\n    branches: [main]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Configure AWS Credentials\n        uses: aws-actions/configure-aws-credentials@v4\n        with:\n          role-to-assume: \\${{ secrets.AWS_ROLE_ARN }}\n          aws-region: ap-southeast-1\n\n      # 1. Deploy to inactive target group (green)\n      - name: Deploy to Green\n        run: |\n          aws ecs update-service \\\n            --cluster \\${{ env.CLUSTER }} \\\n            --service \\${{ env.SERVICE }}-green \\\n            --task-definition \\${{ env.TASK_DEF }}\n\n      # 2. Wait for green to stabilize\n      - name: Wait for Stability\n        run: |\n          aws ecs wait services-stable \\\n            --cluster \\${{ env.CLUSTER }} \\\n            --services \\${{ env.SERVICE }}-green\n\n      # 3. Shift 10% traffic, watch alarms for 60s\n      - name: Canary shift (10%)\n        run: |\n          terraform apply -var="blue_weight=90" \\\n                          -var="green_weight=10" -auto-approve\n          sleep 60\n\n      # 4. Full cutover if alarms are OK\n      - name: Full cutover\n        run: |\n          terraform apply -var="blue_weight=0" \\\n                          -var="green_weight=100" -auto-approve`;
 
-resource "aws_lb_target_group" "green" {
-  name     = "\${var.service_name}-green"
-  port     = 8080
-  protocol = "HTTP"
-  vpc_id   = var.vpc_id
-
-  health_check {
-    path                = "/health"
-    interval            = 15
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-  }
-
-  deregistration_delay = 30
-}`;
-
-const WEIGHTED_ROUTING = `resource "aws_lb_listener_rule" "weighted" {
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 100
-
-  action {
-    type = "forward"
-
-    forward {
-      target_group {
-        arn    = aws_lb_target_group.blue.arn
-        weight = var.blue_weight  # 100 → 0 during switch
-      }
-      target_group {
-        arn    = aws_lb_target_group.green.arn
-        weight = var.green_weight # 0 → 100 during switch
-      }
-      stickiness {
-        enabled  = true
-        duration = 300
-      }
-    }
-  }
-
-  condition {
-    host_header { values = [var.domain] }
-  }
-}`;
-
-const GITHUB_ACTIONS = `name: Blue-Green Deploy
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: \${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ap-southeast-1
-
-      # 1. Deploy to inactive target group (green)
-      - name: Deploy to Green
-        run: |
-          aws ecs update-service \\
-            --cluster \${{ env.CLUSTER }} \\
-            --service \${{ env.SERVICE }}-green \\
-            --task-definition \${{ env.TASK_DEF }}
-
-      # 2. Wait for green to stabilize
-      - name: Wait for Stability
-        run: |
-          aws ecs wait services-stable \\
-            --cluster \${{ env.CLUSTER }} \\
-            --services \${{ env.SERVICE }}-green
-
-      # 3. Shift 10% traffic, watch alarms for 60s
-      - name: Canary shift (10%)
-        run: |
-          terraform apply -var="blue_weight=90" \\
-                          -var="green_weight=10" -auto-approve
-          sleep 60
-
-      # 4. Full cutover if alarms are OK
-      - name: Full cutover
-        run: |
-          terraform apply -var="blue_weight=0" \\
-                          -var="green_weight=100" -auto-approve`;
-
-const CLOUDWATCH = `resource "aws_cloudwatch_metric_alarm" "p99_latency" {
-  alarm_name          = "\${var.service_name}-p99-high"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "TargetResponseTime"
-  namespace           = "AWS/ApplicationELB"
-  period              = 60
-  statistic           = "p99"
-  threshold           = 2.0   # seconds
-  alarm_actions       = [aws_sns_topic.alerts.arn]
-
-  dimensions = {
-    LoadBalancer = aws_lb.main.arn_suffix
-    TargetGroup  = aws_lb_target_group.green.arn_suffix
-  }
-}`;
+const CLOUDWATCH = `resource "aws_cloudwatch_metric_alarm" "p99_latency" {\n  alarm_name          = "\\${var.service_name}-p99-high"\n  comparison_operator = "GreaterThanThreshold"\n  evaluation_periods  = 2\n  metric_name         = "TargetResponseTime"\n  namespace           = "AWS/ApplicationELB"\n  period              = 60\n  statistic           = "p99"\n  threshold           = 2.0   # seconds\n  alarm_actions       = [aws_sns_topic.alerts.arn]\n\n  dimensions = {\n    LoadBalancer = aws_lb.main.arn_suffix\n    TargetGroup  = aws_lb_target_group.green.arn_suffix\n  }\n}`;
 
 function SectionHeading({ id, level, children }: { id: string; level: 2 | 3; children: React.ReactNode }) {
   const common: React.CSSProperties = {
@@ -196,12 +84,8 @@ function Callout({ type = "info", children }: { type?: "info" | "warn" | "tip"; 
   );
 }
 
-interface Props {
-  onBack: () => void;
-  onTagClick?: (tag: string) => void;
-}
-
-export function BlogPost({ onBack, onTagClick }: Props) {
+export function BlogPost({ post }: { post: Post }) {
+  const navigate = useNavigate();
   const [bookmarked, setBookmarked] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -218,7 +102,7 @@ export function BlogPost({ onBack, onTagClick }: Props) {
       {/* Back nav */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <button
-          onClick={onBack}
+          onClick={() => navigate("/")}
           style={{ display: "flex", alignItems: "center", gap: "7px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500, color: "rgba(255,255,255,0.5)", background: "transparent", border: "none", cursor: "pointer", padding: 0, transition: "color 0.15s" }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
@@ -232,16 +116,16 @@ export function BlogPost({ onBack, onTagClick }: Props) {
       <header className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-8">
         {/* Tag pills */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "20px" }}>
-          {["Terraform", "AWS", "ECS", "DevOps"].map((tag) => (
-            <button
+          {[post.tag, ...post.tags].slice(0, 4).map((tag) => (
+            <Link
               key={tag}
-              onClick={() => onTagClick?.(tag)}
-              style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", fontWeight: 600, color: "#a5b4fc", background: "rgba(80,70,229,0.15)", border: "1px solid rgba(80,70,229,0.3)", borderRadius: "6px", padding: "4px 11px", cursor: "pointer", transition: "background 0.15s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(80,70,229,0.25)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(80,70,229,0.15)")}
+              to={`/tag/${tag}`}
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", fontWeight: 600, color: post.tagColor, background: `${post.tagColor}18`, border: `1px solid ${post.tagColor}38`, borderRadius: "6px", padding: "4px 11px", textDecoration: "none", transition: "background 0.15s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = `${post.tagColor}30`)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = `${post.tagColor}18`)}
             >
               {tag}
-            </button>
+            </Link>
           ))}
         </div>
 
@@ -249,31 +133,31 @@ export function BlogPost({ onBack, onTagClick }: Props) {
         <h1
           style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "clamp(1.9rem, 5vw, 3rem)", lineHeight: 1.15, letterSpacing: "-0.02em", color: "#fff", margin: "0 0 18px" }}
         >
-          Zero-Downtime Blue-Green Deployments with Terraform and AWS ECS
+          {post.title}
         </h1>
 
         {/* Subtitle */}
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "1.125rem", lineHeight: 1.7, color: "rgba(255,255,255,0.55)", margin: "0 0 28px", maxWidth: "680px" }}>
-          Orchestrating seamless container deployments using weighted ALB target groups, Terraform modules, and CloudWatch alarms that auto-rollback on p99 latency spikes.
+          {post.excerpt || "Read this article to learn more."}
         </p>
 
         {/* Author row */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", paddingBottom: "24px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(80,70,229,0.35)", border: "2px solid rgba(80,70,229,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "'Fraunces', serif", fontSize: "1.1rem", fontWeight: 700, color: "#a5b4fc" }}>W</span>
+              <span style={{ fontFamily: "'Fraunces', serif", fontSize: "1.1rem", fontWeight: 700, color: "#a5b4fc" }}>{post.author[0].toUpperCase()}</span>
             </div>
             <div>
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", fontWeight: 600, color: "#fff", margin: 0 }}>Wong</p>
-              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>Jun 10, 2026</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", fontWeight: 600, color: "#fff", margin: 0 }}>{post.author}</p>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>{post.date}</p>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: "rgba(255,255,255,0.35)" }}>
-              <Clock size={12} />5 min read
+              <Clock size={12} />{post.readTime}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: "rgba(255,255,255,0.35)" }}>
-              <Eye size={12} />2,847 views
+              <Eye size={12} />{post.views.toLocaleString()} views
             </div>
             {/* Share buttons */}
             <div style={{ display: "flex", gap: "6px" }}>
@@ -320,7 +204,7 @@ export function BlogPost({ onBack, onTagClick }: Props) {
               <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.3)", marginLeft: "8px" }}>deploy.sh</span>
             </div>
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8125rem", lineHeight: 2, color: "rgba(255,255,255,0.7)" }}>
-              <div><span style={{ color: "#6ee7b7" }}>$ </span><span style={{ color: "rgba(165,180,252,0.8)" }}>terraform</span> apply <span style={{ color: "#fcd34d" }}>-var</span>="blue_weight=0" <span style={{ color: "#fcd34d" }}>-var</span>="green_weight=100"</div>
+              <div><span style={{ color: "#6ee7b7" }}>$ </span><span style={{ color: "rgba(165,180,252,0.8)" }}>terraform</span> apply <span style={{ color: "#fcd34d" }}>-var</span>=&quot;blue_weight=0&quot; <span style={{ color: "#fcd34d" }}>-var</span>=&quot;green_weight=100&quot;</div>
               <div style={{ color: "rgba(255,255,255,0.35)" }}>  Plan: 1 to add, 2 to change, 0 to destroy.</div>
               <div><span style={{ color: "#6ee7b7" }}>✔</span> aws_lb_listener_rule.weighted: Modifications complete</div>
               <div><span style={{ color: "#6ee7b7" }}>✔</span> aws_cloudwatch_metric_alarm.p99_latency: Created</div>
@@ -332,24 +216,16 @@ export function BlogPost({ onBack, onTagClick }: Props) {
 
       {/* Body + TOC layout */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        {/*
-          Flex row on xl+: article (72ch) + sticky TOC (220px), gap 96px.
-          Flex col below xl: TOC accordion (xl:hidden) appears above article via DOM order.
-        */}
         <div className="flex flex-col xl:flex-row xl:items-start xl:justify-center" style={{ gap: "96px" }}>
-          {/* Single TOC render — desktop aside (xl:block) + mobile accordion (xl:hidden) */}
           <TableOfContents items={TOC} />
 
-          {/* Reading column — pushed after TOC in DOM so mobile accordion sits above it */}
           <article style={{ flex: "0 1 72ch", minWidth: 0, maxWidth: "72ch", order: -1 }}>
-
-            {/* ── BODY CONTENT ── */}
             <SectionHeading id="overview" level={2}>Overview</SectionHeading>
             <Para>
-              Every time you deploy a new container image to production you're gambling. Even a well-tested build can break under real load, expose a config drift, or hit a downstream API that behaves differently than staging. The goal of blue-green deployments is to make that gamble reversible in under 30 seconds.
+              Every time you deploy a new container image to production you&apos;re gambling. Even a well-tested build can break under real load, expose a config drift, or hit a downstream API that behaves differently than staging. The goal of blue-green deployments is to make that gamble reversible in under 30 seconds.
             </Para>
             <Para>
-              In this post I'll walk through the exact Terraform configuration I use to run two ECS services — blue (current) and green (next) — behind a single Application Load Balancer, shift traffic between them using weighted listener rules, and auto-rollback when a <InlineCode>p99</InlineCode> latency CloudWatch alarm fires.
+              In this post I&apos;ll walk through the exact Terraform configuration I use to run two ECS services — blue (current) and green (next) — behind a single Application Load Balancer, shift traffic between them using weighted listener rules, and auto-rollback when a <InlineCode>p99</InlineCode> latency CloudWatch alarm fires.
             </Para>
 
             <SectionHeading id="architecture" level={2}>Architecture</SectionHeading>
@@ -359,7 +235,7 @@ export function BlogPost({ onBack, onTagClick }: Props) {
 
             <SectionHeading id="blue-green-explained" level={3}>Blue-Green Explained</SectionHeading>
             <Para>
-              "Blue" is always the live environment. "Green" receives the new build. Once green is healthy, you shift a small canary percentage of traffic (10%), observe for 60 seconds, then cut over completely. If an alarm fires during the canary window, Terraform re-applies the original weights. Blue never goes away until the post-deploy observation period clears.
+              &quot;Blue&quot; is always the live environment. &quot;Green&quot; receives the new build. Once green is healthy, you shift a small canary percentage of traffic (10%), observe for 60 seconds, then cut over completely. If an alarm fires during the canary window, Terraform re-applies the original weights. Blue never goes away until the post-deploy observation period clears.
             </Para>
             <Callout type="tip">
               Keep both target groups registered to the same ALB listener. Switching is purely a weight change on the forwarding rule — no DNS TTL, no ELB instance draining delays.
@@ -379,7 +255,7 @@ export function BlogPost({ onBack, onTagClick }: Props) {
             </Para>
             <CodeBlock filename="modules/ecs-blue-green/listener.tf" language="hcl" code={WEIGHTED_ROUTING} />
             <Callout type="warn">
-              Enable session stickiness during the switch window. Without it, a single user's requests may alternate between blue and green mid-session, causing state inconsistencies for authenticated flows.
+              Enable session stickiness during the switch window. Without it, a single user&apos;s requests may alternate between blue and green mid-session, causing state inconsistencies for authenticated flows.
             </Callout>
 
             <SectionHeading id="ecs-service" level={3}>ECS Service Config</SectionHeading>
@@ -389,7 +265,7 @@ export function BlogPost({ onBack, onTagClick }: Props) {
 
             <SectionHeading id="cloudwatch-alarms" level={2}>CloudWatch Alarms</SectionHeading>
             <Para>
-              You need at minimum two alarms watching the green target group: p99 response time and 5xx error rate. Both use 60-second evaluation periods with a 2-period breach threshold so a transient spike doesn't trigger a false rollback.
+              You need at minimum two alarms watching the green target group: p99 response time and 5xx error rate. Both use 60-second evaluation periods with a 2-period breach threshold so a transient spike doesn&apos;t trigger a false rollback.
             </Para>
             <CodeBlock filename="modules/ecs-blue-green/alarms.tf" language="hcl" code={CLOUDWATCH} />
 
@@ -417,7 +293,7 @@ export function BlogPost({ onBack, onTagClick }: Props) {
 
             <SectionHeading id="conclusion" level={2}>Conclusion</SectionHeading>
             <Para>
-              Blue-green with weighted ALB routing gives you a deployment strategy that's genuinely zero-downtime, measurably safe, and rollback-friendly. The Terraform module I described is about 200 lines — small enough to own fully and extend with additional alarm conditions as your SLOs mature.
+              Blue-green with weighted ALB routing gives you a deployment strategy that&apos;s genuinely zero-downtime, measurably safe, and rollback-friendly. The Terraform module I described is about 200 lines — small enough to own fully and extend with additional alarm conditions as your SLOs mature.
             </Para>
             <Para>
               Next up I want to explore KEDA-based scaling during the canary window so the green fleet auto-scales to handle full traffic before the cutover completes. If you have questions or hit edge cases not covered here, drop a comment below.
