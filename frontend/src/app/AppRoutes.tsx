@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router";
 import { AuthProvider } from "../lib/auth-context";
+import { useAuth } from "../lib/auth-context";
 import { Layout } from "./components/Layout";
 import { HomePage } from "./pages/HomePage";
 import { BlogPostPage } from "./pages/BlogPostPage";
@@ -12,6 +13,14 @@ import { AuthPages } from "./components/auth/AuthPages";
 import { AccountSettings } from "./components/auth/AccountSettings";
 import { TextPage } from "./components/TextPage";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
+
+function RequireAdmin() {
+  const { user } = useAuth();
+  if (!user || user.role !== "admin") {
+    return <Navigate to="/auth" replace />;
+  }
+  return <Outlet />;
+}
 
 export function AppRoutes() {
   return (
@@ -31,7 +40,9 @@ export function AppRoutes() {
           </Route>
           <Route path="auth" element={<AuthPages />} />
           <Route path="settings" element={<AccountSettings />} />
-          <Route path="admin/*" element={<AdminDashboard />} />
+          <Route element={<RequireAdmin />}>
+            <Route path="admin/*" element={<AdminDashboard />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </AuthProvider>

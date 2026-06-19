@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { createContext, useContext, useState, useCallback } from "react";
+import { BRAND_NAME, BRAND_EMAIL } from "./constants";
 
 export type UserRole = "admin" | "user";
 
@@ -10,8 +11,8 @@ export interface AuthUser {
 }
 
 export const CREDENTIALS: Record<UserRole, { email: string; password: string; name: string }> = {
-  admin: { email: "hello@yourdomain.dev", password: "Password1!", name: "Admin" },
-  user:  { email: "reader@example.com",  password: "Reader123!", name: "Reader" },
+  admin: { email: BRAND_EMAIL, password: "Password1!", name: BRAND_NAME },
+  user:  { email: "reader@gmail.com", password: "Reader123!", name: "Alex" },
 };
 
 interface AuthContextValue {

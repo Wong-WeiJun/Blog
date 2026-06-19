@@ -2,7 +2,7 @@ import type { CSSProperties, ChangeEvent } from "react";
 import { useState, useRef } from "react";
 import { Camera, Check, CheckCircle2, Loader2 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
-import { BRAND_NAME, BRAND_EMAIL } from "../../../lib/constants";
+import { BRAND_NAME, BRAND_EMAIL, BRAND_HANDLE, BRAND_GITHUB } from "../../../lib/constants";
 
 function Field({
   label, value, onChange, type = "text", placeholder, hint, rows, maxLength, readOnly,
@@ -109,11 +109,11 @@ export function AdminProfileView() {
   const { user } = useAuth();
   const displayName = user?.name ?? BRAND_NAME;
   const [name, setName]         = useState(displayName);
-  const [username, setUsername] = useState("your-handle");
-  const [bio, setBio]           = useState("Cloud engineer in progress. Building resilient infrastructure and documenting the journey — one deployment at a time.");
+  const [username, setUsername] = useState(BRAND_HANDLE);
+  const [bio, setBio]           = useState("");
   const [website, setWebsite]   = useState(`https://${BRAND_EMAIL.split("@")[1] ?? "yourdomain.dev"}`);
-  const [twitter, setTwitter]   = useState("@yourhandle");
-  const [github, setGithub]     = useState("your-github");
+  const [twitter, setTwitter]   = useState("");
+  const [github, setGithub]     = useState(BRAND_GITHUB);
   const [loading, setLoading]   = useState(false);
   const [saved, setSaved]       = useState(false);
 

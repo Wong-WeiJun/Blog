@@ -265,10 +265,8 @@ function Skills() {
 /* ─── 4. Certifications ─── */
 
 const CERTS = [
-  { name: "AWS Solutions Architect Associate", issuer: "Amazon Web Services", date: "Mar 2026", badge: "SAA-C03", color: "#f97316", abbr: "SAA" },
-  { name: "AWS Cloud Practitioner", issuer: "Amazon Web Services", date: "Sep 2025", badge: "CLF-C02", color: "#fbbf24", abbr: "CCP" },
-  { name: "Terraform Associate", issuer: "HashiCorp", date: "Jan 2026", badge: "003", color: "#8b5cf6", abbr: "TF" },
-  { name: "CKAD", issuer: "CNCF / Linux Foundation", date: "Apr 2026", badge: "CKAD", color: "#06b6d4", abbr: "K8s" },
+  { name: "AWS Solutions Architect Associate", issuer: "Amazon Web Services", date: "2025", badge: "SAA-C03", color: "#f97316", abbr: "SAA" },
+  { name: "IBM Data Engineering Professional", issuer: "IBM / Coursera", date: "2024", badge: "DE-PRO", color: "#3b82f6", abbr: "IBM" },
 ];
 
 function Certifications() {

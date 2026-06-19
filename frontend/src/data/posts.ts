@@ -13,6 +13,10 @@ export interface Post {
   views: number;
   author: string;
   color: string;
+  featured?: boolean;
+  cover_image_url?: string;
+  meta_title?: string;
+  meta_description?: string;
 }
 
 export interface Comment {
@@ -50,6 +54,7 @@ export const mockPosts: Post[] = [
     views: 2847,
     author: "Your Name",
     color: "#8b5cf6",
+    featured: true,
   },
   {
     id: 2,
@@ -207,7 +212,7 @@ export function getPostById(id: number): Post | undefined {
 
 export function getPostsByTag(tag: string): Post[] {
   return mockPosts.filter(
-    (p) => p.tags.includes(tag) || p.tag === tag && p.status === "published"
+    (p) => p.status === "published" && (p.tags.includes(tag) || p.tag === tag)
   );
 }
 

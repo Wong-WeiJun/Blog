@@ -1,7 +1,7 @@
-export const BRAND_NAME = "Your Name";
-export const BRAND_DOMAIN = "yourdomain.dev";
-export const BRAND_EMAIL = "hello@yourdomain.dev";
-export const BRAND_HANDLE = "your-handle";
-export const BRAND_GITHUB = "your-github";
-export const BRAND_TWITTER = "@yourhandle";
+export const BRAND_NAME = "Wong Wei Jun";
+export const BRAND_DOMAIN = "wongweijun.me";
+export const BRAND_EMAIL = "hello@wongweijun.me";
+export const BRAND_HANDLE = "wongweijun";
+export const BRAND_GITHUB = "Wong-WeiJun";
+export const BRAND_TWITTER = "@wongweijun";
 export const COPYRIGHT_YEAR = new Date().getFullYear();

@@ -1,88 +1,14 @@
-import type { ReactNode, CSSProperties } from "react";
-import { useState } from "react";
+import { useState, type ComponentPropsWithoutRef } from "react";
 import { useNavigate, Link } from "react-router";
 import { Eye, Clock, ArrowLeft, Bookmark, Twitter, Link2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github-dark.css";
 import { ReadingProgress } from "./ReadingProgress";
-import { TableOfContents, type TocItem } from "./TableOfContents";
 import { CodeBlock, InlineCode } from "./CodeBlock";
 import { CommentSection } from "./CommentSection";
 import type { Post } from "../../data/posts";
-
-const TOC: TocItem[] = [
-  { id: "overview", label: "Overview", level: 2 },
-  { id: "architecture", label: "Architecture", level: 2 },
-  { id: "blue-green-explained", label: "Blue-Green Explained", level: 3 },
-  { id: "terraform-setup", label: "Terraform Setup", level: 2 },
-  { id: "target-groups", label: "Target Groups", level: 3 },
-  { id: "weighted-routing", label: "Weighted Routing", level: 3 },
-  { id: "ecs-service", label: "ECS Service Config", level: 3 },
-  { id: "cloudwatch-alarms", label: "CloudWatch Alarms", level: 2 },
-  { id: "rollback", label: "Auto-Rollback", level: 3 },
-  { id: "ci-cd", label: "CI/CD Integration", level: 2 },
-  { id: "gotchas", label: "Common Gotchas", level: 2 },
-  { id: "conclusion", label: "Conclusion", level: 2 },
-];
-
-const TERRAFORM_MAIN = `resource "aws_lb_target_group" "blue" {\n  name     = "\${var.service_name}-blue"\n  port     = 8080\n  protocol = "HTTP"\n  vpc_id   = var.vpc_id\n\n  health_check {\n    path                = "/health"\n    interval            = 15\n    healthy_threshold   = 2\n    unhealthy_threshold = 3\n  }\n\n  deregistration_delay = 30\n}\n\nresource "aws_lb_target_group" "green" {\n  name     = "\${var.service_name}-green"\n  port     = 8080\n  protocol = "HTTP"\n  vpc_id   = var.vpc_id\n\n  health_check {\n    path                = "/health"\n    interval            = 15\n    healthy_threshold   = 2\n    unhealthy_threshold = 3\n  }\n\n  deregistration_delay = 30\n}`;
-
-const WEIGHTED_ROUTING = `resource "aws_lb_listener_rule" "weighted" {\n  listener_arn = aws_lb_listener.https.arn\n  priority     = 100\n\n  action {\n    type = "forward"\n\n    forward {\n      target_group {\n        arn    = aws_lb_target_group.blue.arn\n        weight = var.blue_weight  # 100 → 0 during switch\n      }\n      target_group {\n        arn    = aws_lb_target_group.green.arn\n        weight = var.green_weight # 0 → 100 during switch\n      }\n      stickiness {\n        enabled  = true\n        duration = 300\n      }\n    }\n  }\n\n  condition {\n    host_header { values = [var.domain] }\n  }\n}`;
-
-const GITHUB_ACTIONS = `name: Blue-Green Deploy\n\non:\n  push:\n    branches: [main]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Configure AWS Credentials\n        uses: aws-actions/configure-aws-credentials@v4\n        with:\n          role-to-assume: \${{ secrets.AWS_ROLE_ARN }}\n          aws-region: ap-southeast-1\n\n      # 1. Deploy to inactive target group (green)\n      - name: Deploy to Green\n        run: |\n          aws ecs update-service \\\n            --cluster \${{ env.CLUSTER }} \\\n            --service \${{ env.SERVICE }}-green \\\n            --task-definition \${{ env.TASK_DEF }}\n\n      # 2. Wait for green to stabilize\n      - name: Wait for Stability\n        run: |\n          aws ecs wait services-stable \\\n            --cluster \${{ env.CLUSTER }} \\\n            --services \${{ env.SERVICE }}-green\n\n      # 3. Shift 10% traffic, watch alarms for 60s\n      - name: Canary shift (10%)\n        run: |\n          terraform apply -var="blue_weight=90" \\\n                          -var="green_weight=10" -auto-approve\n          sleep 60\n\n      # 4. Full cutover if alarms are OK\n      - name: Full cutover\n        run: |\n          terraform apply -var="blue_weight=0" \\\n                          -var="green_weight=100" -auto-approve`;
-
-const CLOUDWATCH = `resource "aws_cloudwatch_metric_alarm" "p99_latency" {\n  alarm_name          = "\${var.service_name}-p99-high"\n  comparison_operator = "GreaterThanThreshold"\n  evaluation_periods  = 2\n  metric_name         = "TargetResponseTime"\n  namespace           = "AWS/ApplicationELB"\n  period              = 60\n  statistic           = "p99"\n  threshold           = 2.0   # seconds\n  alarm_actions       = [aws_sns_topic.alerts.arn]\n\n  dimensions = {\n    LoadBalancer = aws_lb.main.arn_suffix\n    TargetGroup  = aws_lb_target_group.green.arn_suffix\n  }\n}`;
-
-function SectionHeading({ id, level, children }: { id: string; level: 2 | 3; children: ReactNode }) {
-  const common: CSSProperties = {
-    fontFamily: "'Fraunces', serif",
-    color: "#fff",
-    letterSpacing: "-0.015em",
-    scrollMarginTop: "96px",
-  };
-  if (level === 2) {
-    return (
-      <h2
-        id={id}
-        style={{ ...common, fontSize: "clamp(1.4rem, 2.5vw, 1.75rem)", fontWeight: 700, marginTop: "48px", marginBottom: "16px", paddingTop: "8px" }}
-      >
-        {children}
-      </h2>
-    );
-  }
-  return (
-    <h3
-      id={id}
-      style={{ ...common, fontSize: "1.125rem", fontWeight: 600, marginTop: "32px", marginBottom: "12px" }}
-    >
-      {children}
-    </h3>
-  );
-}
-
-function Para({ children }: { children: ReactNode }) {
-  return (
-    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "1.0625rem", lineHeight: 1.8, color: "rgba(255,255,255,0.65)", margin: "0 0 18px" }}>
-      {children}
-    </p>
-  );
-}
-
-function Callout({ type = "info", children }: { type?: "info" | "warn" | "tip"; children: ReactNode }) {
-  const styles: Record<string, { bg: string; border: string; icon: string; label: string }> = {
-    info: { bg: "rgba(80,70,229,0.1)", border: "rgba(80,70,229,0.3)", icon: "ℹ", label: "Note" },
-    warn: { bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)", icon: "⚠", label: "Warning" },
-    tip:  { bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.25)", icon: "✦", label: "Tip" },
-  };
-  const s = styles[type];
-  return (
-    <div style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: "10px", padding: "14px 18px", margin: "20px 0", display: "flex", gap: "12px" }}>
-      <span style={{ fontSize: "0.875rem", flexShrink: 0, marginTop: "2px" }}>{s.icon}</span>
-      <div>
-        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>{s.label}</span>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", lineHeight: 1.65, color: "rgba(255,255,255,0.6)", margin: 0 }}>{children}</p>
-      </div>
-    </div>
-  );
-}
 
 export function BlogPost({ post }: { post: Post }) {
   const navigate = useNavigate();
@@ -214,90 +140,38 @@ export function BlogPost({ post }: { post: Post }) {
         </div>
       </div>
 
-      {/* Body + TOC layout */}
+      {/* Body */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="flex flex-col xl:flex-row xl:items-start xl:justify-center" style={{ gap: "96px" }}>
-          <TableOfContents items={TOC} />
-
           <article style={{ flex: "0 1 72ch", minWidth: 0, maxWidth: "72ch", order: -1 }}>
-            <SectionHeading id="overview" level={2}>Overview</SectionHeading>
-            <Para>
-              Every time you deploy a new container image to production you&apos;re gambling. Even a well-tested build can break under real load, expose a config drift, or hit a downstream API that behaves differently than staging. The goal of blue-green deployments is to make that gamble reversible in under 30 seconds.
-            </Para>
-            <Para>
-              In this post I&apos;ll walk through the exact Terraform configuration I use to run two ECS services — blue (current) and green (next) — behind a single Application Load Balancer, shift traffic between them using weighted listener rules, and auto-rollback when a <InlineCode>p99</InlineCode> latency CloudWatch alarm fires.
-            </Para>
-
-            <SectionHeading id="architecture" level={2}>Architecture</SectionHeading>
-            <Para>
-              The setup has three moving parts: two ECS services sharing the same task definition family, two ALB target groups each receiving a configurable traffic weight, and a set of CloudWatch alarms watching the green target group during the switch window.
-            </Para>
-
-            <SectionHeading id="blue-green-explained" level={3}>Blue-Green Explained</SectionHeading>
-            <Para>
-              &quot;Blue&quot; is always the live environment. &quot;Green&quot; receives the new build. Once green is healthy, you shift a small canary percentage of traffic (10%), observe for 60 seconds, then cut over completely. If an alarm fires during the canary window, Terraform re-applies the original weights. Blue never goes away until the post-deploy observation period clears.
-            </Para>
-            <Callout type="tip">
-              Keep both target groups registered to the same ALB listener. Switching is purely a weight change on the forwarding rule — no DNS TTL, no ELB instance draining delays.
-            </Callout>
-
-            <SectionHeading id="terraform-setup" level={2}>Terraform Setup</SectionHeading>
-
-            <SectionHeading id="target-groups" level={3}>Target Groups</SectionHeading>
-            <Para>
-              Each environment gets its own target group. The critical settings are <InlineCode>deregistration_delay</InlineCode> (match your ALB idle timeout, typically 30s) and a low <InlineCode>healthy_threshold</InlineCode> so new tasks register fast.
-            </Para>
-            <CodeBlock filename="modules/ecs-blue-green/main.tf" language="hcl" code={TERRAFORM_MAIN} />
-
-            <SectionHeading id="weighted-routing" level={3}>Weighted Routing</SectionHeading>
-            <Para>
-              The listener rule uses a <InlineCode>forward</InlineCode> action with per-group weights. Variables <InlineCode>blue_weight</InlineCode> and <InlineCode>green_weight</InlineCode> are the only values you need to change to shift traffic — no resource replacements, just an in-place update.
-            </Para>
-            <CodeBlock filename="modules/ecs-blue-green/listener.tf" language="hcl" code={WEIGHTED_ROUTING} />
-            <Callout type="warn">
-              Enable session stickiness during the switch window. Without it, a single user&apos;s requests may alternate between blue and green mid-session, causing state inconsistencies for authenticated flows.
-            </Callout>
-
-            <SectionHeading id="ecs-service" level={3}>ECS Service Config</SectionHeading>
-            <Para>
-              Both ECS services use <InlineCode>deployment_maximum_percent = 200</InlineCode> and <InlineCode>deployment_minimum_healthy_percent = 100</InlineCode> so rolling updates within each color never drop capacity. The green service starts with <InlineCode>desired_count = 0</InlineCode> and scales up before the canary shift.
-            </Para>
-
-            <SectionHeading id="cloudwatch-alarms" level={2}>CloudWatch Alarms</SectionHeading>
-            <Para>
-              You need at minimum two alarms watching the green target group: p99 response time and 5xx error rate. Both use 60-second evaluation periods with a 2-period breach threshold so a transient spike doesn&apos;t trigger a false rollback.
-            </Para>
-            <CodeBlock filename="modules/ecs-blue-green/alarms.tf" language="hcl" code={CLOUDWATCH} />
-
-            <SectionHeading id="rollback" level={3}>Auto-Rollback</SectionHeading>
-            <Para>
-              The CI step after each traffic shift polls <InlineCode>aws cloudwatch describe-alarms</InlineCode>. If either alarm enters <InlineCode>ALARM</InlineCode> state, the pipeline immediately re-applies with the original weights and exits non-zero, failing the deployment job and triggering a Slack alert.
-            </Para>
-
-            <SectionHeading id="ci-cd" level={2}>CI/CD Integration</SectionHeading>
-            <Para>
-              The GitHub Actions workflow below orchestrates the full flow: build → push image → deploy green → canary 10% → wait → full cutover. Each <InlineCode>terraform apply</InlineCode> is intentionally separate so the pipeline can roll back at any point.
-            </Para>
-            <CodeBlock filename=".github/workflows/deploy.yml" language="yaml" code={GITHUB_ACTIONS} />
-
-            <SectionHeading id="gotchas" level={2}>Common Gotchas</SectionHeading>
-            <Para>
-              A few things that bit me before the setup stabilized:
-            </Para>
-            <ul style={{ fontFamily: "'Inter', sans-serif", fontSize: "1.0625rem", lineHeight: 1.8, color: "rgba(255,255,255,0.6)", paddingLeft: "22px", margin: "0 0 18px" }}>
-              <li style={{ marginBottom: "10px" }}><strong style={{ color: "rgba(255,255,255,0.85)" }}>Health check grace period</strong> — Set <InlineCode>health_check_grace_period_seconds</InlineCode> on the ECS service to at least your app startup time. A cold JVM or SSR bundle can take 15–20s to serve <InlineCode>/health</InlineCode>.</li>
-              <li style={{ marginBottom: "10px" }}><strong style={{ color: "rgba(255,255,255,0.85)" }}>Security group overlap</strong> — Both target groups must be in the same SG that allows inbound from the ALB SG. Forgetting to add the green TG to the egress rule is the #1 cause of green tasks staying unhealthy.</li>
-              <li style={{ marginBottom: "10px" }}><strong style={{ color: "rgba(255,255,255,0.85)" }}>Stickiness duration</strong> — 300 seconds (5 min) is fine for most apps. For long-lived WebSocket connections, match your max session length or use <InlineCode>LB_COOKIE</InlineCode> stickiness with explicit app-level affinity.</li>
-              <li><strong style={{ color: "rgba(255,255,255,0.85)" }}>Weights must sum to 100</strong> — ALB validates this at apply time. Use a <InlineCode>validation</InlineCode> block in your Terraform variables to catch this before a plan hits AWS.</li>
-            </ul>
-
-            <SectionHeading id="conclusion" level={2}>Conclusion</SectionHeading>
-            <Para>
-              Blue-green with weighted ALB routing gives you a deployment strategy that&apos;s genuinely zero-downtime, measurably safe, and rollback-friendly. The Terraform module I described is about 200 lines — small enough to own fully and extend with additional alarm conditions as your SLOs mature.
-            </Para>
-            <Para>
-              Next up I want to explore KEDA-based scaling during the canary window so the green fleet auto-scales to handle full traffic before the cutover completes. If you have questions or hit edge cases not covered here, drop a comment below.
-            </Para>
+            {post.content ? (
+              <div className="prose-blog">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeHighlight]}
+                  components={{
+                    code({ className, children }: ComponentPropsWithoutRef<"code"> & { inline?: boolean }) {
+                      const isBlock = className?.startsWith("language-");
+                      if (isBlock) {
+                        return (
+                          <CodeBlock
+                            language={(className ?? "").replace("language-", "")}
+                            code={String(children).replace(/\n$/, "")}
+                          />
+                        );
+                      }
+                      return <InlineCode>{children}</InlineCode>;
+                    },
+                  }}
+                >
+                  {post.content}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <p style={{ fontFamily: "'Inter', sans-serif", color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>
+                This post has no content yet.
+              </p>
+            )}
 
             {/* Divider */}
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", marginTop: "48px" }} />

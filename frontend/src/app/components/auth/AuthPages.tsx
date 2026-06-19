@@ -2,19 +2,13 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { Eye, EyeOff, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Check } from "lucide-react";
-import { useAuth } from "../../../lib/auth-context";
+import { useAuth, CREDENTIALS } from "../../../lib/auth-context";
+import type { UserRole } from "../../../lib/auth-context";
 import { BRAND_NAME, BRAND_DOMAIN } from "../../../lib/constants";
 
 /* ─── shared primitives ─── */
 
 type AuthScreen = "login" | "register" | "reset";
-
-type UserRole = "admin" | "user";
-
-const CREDENTIALS: Record<UserRole, { email: string; password: string; name: string }> = {
-  admin: { email: "hello@yourdomain.dev",  password: "Password1!", name: "Admin" },
-  user:  { email: "reader@example.com", password: "Reader123!", name: "Reader" },
-};
 
 interface NavProps {
   onSwitch: (s: AuthScreen) => void;

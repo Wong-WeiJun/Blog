@@ -7,7 +7,7 @@ import {
   CheckCircle2, X,
 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
-import { BRAND_NAME, BRAND_EMAIL } from "../../../lib/constants";
+import { BRAND_NAME, BRAND_EMAIL, BRAND_HANDLE } from "../../../lib/constants";
 
 /* ─── types ─── */
 type SettingsTab = "profile" | "security" | "danger";
@@ -231,8 +231,8 @@ function AvatarUpload() {
 
 function ProfileTab() {
   const [name, setName] = useState(BRAND_NAME);
-  const [username, setUsername] = useState("your-handle");
-  const [bio, setBio] = useState("Cloud engineer in progress. Building resilient infra and documenting the journey — one deployment at a time.");
+  const [username, setUsername] = useState(BRAND_HANDLE);
+  const [bio, setBio] = useState("");
   const [website, setWebsite] = useState(`https://${BRAND_EMAIL.split("@")[1] ?? "yourdomain.dev"}`);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
