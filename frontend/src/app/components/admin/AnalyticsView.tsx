@@ -1,7 +1,17 @@
+import type { ReactNode } from "react";
 import { useState, useMemo } from "react";
 import { TrendingUp, TrendingDown, Users, Eye, Clock, ArrowUpRight } from "lucide-react";
 import { mockPosts } from "../../../data/posts";
-import { BRAND_DOMAIN } from "../../../lib/constants";
+
+interface StatItem {
+  label: string;
+  value: string;
+  delta: string;
+  up: boolean;
+  icon: ReactNode;
+  color: string;
+  sub: string;
+}
 
 /* ── data ── */
 
@@ -31,7 +41,7 @@ const REFERRERS = [
 
 /* ── stat cards ── */
 
-function StatCard({ s }: { s: typeof STATS[0] }) {
+function StatCard({ s }: { s: StatItem }) {
   return (
     <div style={{ flex: 1, minWidth: "180px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px", padding: "20px 22px", display: "flex", flexDirection: "column", gap: "10px", transition: "border-color 0.2s" }}
       onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.13)")}
@@ -90,7 +100,7 @@ function LineChart() {
           {[
             { label: "Page Views", color: "#5046e5", solid: true },
             { label: "Unique Visitors", color: "#06b6d4", solid: false },
-          ].map(({ label, color, solid }) => (
+          ].map(({ label, color }) => (
             <button
               key={label}
               onClick={() => label === "Unique Visitors" && setShowVisitors(v => !v)}

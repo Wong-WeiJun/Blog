@@ -1,4 +1,5 @@
-import React from "react";
+import type { ReactNode } from "react";
+import { Fragment } from "react";
 import { useNavigate } from "react-router";
 import {
   LayoutDashboard, FileText, MessageSquare, Tag, BarChart2,
@@ -8,7 +9,7 @@ import { BRAND_NAME, BRAND_DOMAIN } from "../../../lib/constants";
 
 export type AdminView = "overview" | "posts" | "comments" | "tags" | "analytics" | "profile";
 
-const NAV_ITEMS: { id: AdminView; label: string; icon: React.ReactNode; badge?: number; dividerBefore?: boolean }[] = [
+const NAV_ITEMS: { id: AdminView; label: string; icon: ReactNode; badge?: number; dividerBefore?: boolean }[] = [
   { id: "overview",   label: "Overview",  icon: <LayoutDashboard size={16} /> },
   { id: "posts",      label: "Posts",     icon: <FileText size={16} />,       badge: 0 },
   { id: "comments",   label: "Comments",  icon: <MessageSquare size={16} />,  badge: 0 },
@@ -90,7 +91,7 @@ export function AdminSidebar({ activeView, onNavigate, collapsed }: Props) {
         {NAV_ITEMS.map((item) => {
           const active = activeView === item.id;
           return (
-            <React.Fragment key={item.id}>
+            <Fragment key={item.id}>
               {item.dividerBefore && (
                 <div style={{ height: "1px", background: "rgba(255,255,255,0.07)", margin: "6px 4px" }} />
               )}
@@ -137,7 +138,7 @@ export function AdminSidebar({ activeView, onNavigate, collapsed }: Props) {
                 <div style={{ position: "absolute", top: "6px", right: "6px", width: "7px", height: "7px", borderRadius: "50%", background: "#5046e5" }} />
               )}
             </button>
-            </React.Fragment>
+            </Fragment>
           );
         })}
       </nav>

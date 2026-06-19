@@ -1,12 +1,12 @@
+import type { ReactNode, CSSProperties } from "react";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
-import { Eye, Clock, User, ArrowLeft, Share2, Bookmark, Twitter, Link2 } from "lucide-react";
+import { Eye, Clock, ArrowLeft, Bookmark, Twitter, Link2 } from "lucide-react";
 import { ReadingProgress } from "./ReadingProgress";
 import { TableOfContents, type TocItem } from "./TableOfContents";
 import { CodeBlock, InlineCode } from "./CodeBlock";
 import { CommentSection } from "./CommentSection";
 import type { Post } from "../../data/posts";
-import { BRAND_NAME } from "../../lib/constants";
 
 const TOC: TocItem[] = [
   { id: "overview", label: "Overview", level: 2 },
@@ -23,16 +23,16 @@ const TOC: TocItem[] = [
   { id: "conclusion", label: "Conclusion", level: 2 },
 ];
 
-const TERRAFORM_MAIN = `resource "aws_lb_target_group" "blue" {\n  name     = "\\${var.service_name}-blue"\n  port     = 8080\n  protocol = "HTTP"\n  vpc_id   = var.vpc_id\n\n  health_check {\n    path                = "/health"\n    interval            = 15\n    healthy_threshold   = 2\n    unhealthy_threshold = 3\n  }\n\n  deregistration_delay = 30\n}\n\nresource "aws_lb_target_group" "green" {\n  name     = "\\${var.service_name}-green"\n  port     = 8080\n  protocol = "HTTP"\n  vpc_id   = var.vpc_id\n\n  health_check {\n    path                = "/health"\n    interval            = 15\n    healthy_threshold   = 2\n    unhealthy_threshold = 3\n  }\n\n  deregistration_delay = 30\n}`;
+const TERRAFORM_MAIN = `resource "aws_lb_target_group" "blue" {\n  name     = "\${var.service_name}-blue"\n  port     = 8080\n  protocol = "HTTP"\n  vpc_id   = var.vpc_id\n\n  health_check {\n    path                = "/health"\n    interval            = 15\n    healthy_threshold   = 2\n    unhealthy_threshold = 3\n  }\n\n  deregistration_delay = 30\n}\n\nresource "aws_lb_target_group" "green" {\n  name     = "\${var.service_name}-green"\n  port     = 8080\n  protocol = "HTTP"\n  vpc_id   = var.vpc_id\n\n  health_check {\n    path                = "/health"\n    interval            = 15\n    healthy_threshold   = 2\n    unhealthy_threshold = 3\n  }\n\n  deregistration_delay = 30\n}`;
 
 const WEIGHTED_ROUTING = `resource "aws_lb_listener_rule" "weighted" {\n  listener_arn = aws_lb_listener.https.arn\n  priority     = 100\n\n  action {\n    type = "forward"\n\n    forward {\n      target_group {\n        arn    = aws_lb_target_group.blue.arn\n        weight = var.blue_weight  # 100 → 0 during switch\n      }\n      target_group {\n        arn    = aws_lb_target_group.green.arn\n        weight = var.green_weight # 0 → 100 during switch\n      }\n      stickiness {\n        enabled  = true\n        duration = 300\n      }\n    }\n  }\n\n  condition {\n    host_header { values = [var.domain] }\n  }\n}`;
 
-const GITHUB_ACTIONS = `name: Blue-Green Deploy\n\non:\n  push:\n    branches: [main]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Configure AWS Credentials\n        uses: aws-actions/configure-aws-credentials@v4\n        with:\n          role-to-assume: \\${{ secrets.AWS_ROLE_ARN }}\n          aws-region: ap-southeast-1\n\n      # 1. Deploy to inactive target group (green)\n      - name: Deploy to Green\n        run: |\n          aws ecs update-service \\\n            --cluster \\${{ env.CLUSTER }} \\\n            --service \\${{ env.SERVICE }}-green \\\n            --task-definition \\${{ env.TASK_DEF }}\n\n      # 2. Wait for green to stabilize\n      - name: Wait for Stability\n        run: |\n          aws ecs wait services-stable \\\n            --cluster \\${{ env.CLUSTER }} \\\n            --services \\${{ env.SERVICE }}-green\n\n      # 3. Shift 10% traffic, watch alarms for 60s\n      - name: Canary shift (10%)\n        run: |\n          terraform apply -var="blue_weight=90" \\\n                          -var="green_weight=10" -auto-approve\n          sleep 60\n\n      # 4. Full cutover if alarms are OK\n      - name: Full cutover\n        run: |\n          terraform apply -var="blue_weight=0" \\\n                          -var="green_weight=100" -auto-approve`;
+const GITHUB_ACTIONS = `name: Blue-Green Deploy\n\non:\n  push:\n    branches: [main]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Configure AWS Credentials\n        uses: aws-actions/configure-aws-credentials@v4\n        with:\n          role-to-assume: \${{ secrets.AWS_ROLE_ARN }}\n          aws-region: ap-southeast-1\n\n      # 1. Deploy to inactive target group (green)\n      - name: Deploy to Green\n        run: |\n          aws ecs update-service \\\n            --cluster \${{ env.CLUSTER }} \\\n            --service \${{ env.SERVICE }}-green \\\n            --task-definition \${{ env.TASK_DEF }}\n\n      # 2. Wait for green to stabilize\n      - name: Wait for Stability\n        run: |\n          aws ecs wait services-stable \\\n            --cluster \${{ env.CLUSTER }} \\\n            --services \${{ env.SERVICE }}-green\n\n      # 3. Shift 10% traffic, watch alarms for 60s\n      - name: Canary shift (10%)\n        run: |\n          terraform apply -var="blue_weight=90" \\\n                          -var="green_weight=10" -auto-approve\n          sleep 60\n\n      # 4. Full cutover if alarms are OK\n      - name: Full cutover\n        run: |\n          terraform apply -var="blue_weight=0" \\\n                          -var="green_weight=100" -auto-approve`;
 
-const CLOUDWATCH = `resource "aws_cloudwatch_metric_alarm" "p99_latency" {\n  alarm_name          = "\\${var.service_name}-p99-high"\n  comparison_operator = "GreaterThanThreshold"\n  evaluation_periods  = 2\n  metric_name         = "TargetResponseTime"\n  namespace           = "AWS/ApplicationELB"\n  period              = 60\n  statistic           = "p99"\n  threshold           = 2.0   # seconds\n  alarm_actions       = [aws_sns_topic.alerts.arn]\n\n  dimensions = {\n    LoadBalancer = aws_lb.main.arn_suffix\n    TargetGroup  = aws_lb_target_group.green.arn_suffix\n  }\n}`;
+const CLOUDWATCH = `resource "aws_cloudwatch_metric_alarm" "p99_latency" {\n  alarm_name          = "\${var.service_name}-p99-high"\n  comparison_operator = "GreaterThanThreshold"\n  evaluation_periods  = 2\n  metric_name         = "TargetResponseTime"\n  namespace           = "AWS/ApplicationELB"\n  period              = 60\n  statistic           = "p99"\n  threshold           = 2.0   # seconds\n  alarm_actions       = [aws_sns_topic.alerts.arn]\n\n  dimensions = {\n    LoadBalancer = aws_lb.main.arn_suffix\n    TargetGroup  = aws_lb_target_group.green.arn_suffix\n  }\n}`;
 
-function SectionHeading({ id, level, children }: { id: string; level: 2 | 3; children: React.ReactNode }) {
-  const common: React.CSSProperties = {
+function SectionHeading({ id, level, children }: { id: string; level: 2 | 3; children: ReactNode }) {
+  const common: CSSProperties = {
     fontFamily: "'Fraunces', serif",
     color: "#fff",
     letterSpacing: "-0.015em",
@@ -58,7 +58,7 @@ function SectionHeading({ id, level, children }: { id: string; level: 2 | 3; chi
   );
 }
 
-function Para({ children }: { children: React.ReactNode }) {
+function Para({ children }: { children: ReactNode }) {
   return (
     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "1.0625rem", lineHeight: 1.8, color: "rgba(255,255,255,0.65)", margin: "0 0 18px" }}>
       {children}
@@ -66,7 +66,7 @@ function Para({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Callout({ type = "info", children }: { type?: "info" | "warn" | "tip"; children: React.ReactNode }) {
+function Callout({ type = "info", children }: { type?: "info" | "warn" | "tip"; children: ReactNode }) {
   const styles: Record<string, { bg: string; border: string; icon: string; label: string }> = {
     info: { bg: "rgba(80,70,229,0.1)", border: "rgba(80,70,229,0.3)", icon: "ℹ", label: "Note" },
     warn: { bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)", icon: "⚠", label: "Warning" },

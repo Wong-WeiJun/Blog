@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { Search, X, Menu, Settings, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
@@ -64,7 +65,7 @@ function UserMenu() {
   );
 }
 
-function MenuItem({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+function MenuItem({ icon, label, onClick, danger }: { icon: ReactNode; label: string; onClick: () => void; danger?: boolean }) {
   return (
     <button
       onClick={onClick}

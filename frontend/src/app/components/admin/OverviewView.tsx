@@ -1,8 +1,18 @@
+import type { ReactNode } from "react";
 import { useState, useMemo } from "react";
 import { FileText, Eye, MessageSquare, Clock, TrendingUp, TrendingDown } from "lucide-react";
 import { mockPosts, INITIAL_COMMENTS } from "../../../data/posts";
 
-function StatCard({ card }: { card: typeof STAT_CARDS[0] }) {
+interface StatCardItem {
+  label: string;
+  value: string;
+  delta: string;
+  up: boolean;
+  icon: ReactNode;
+  color: string;
+}
+
+function StatCard({ card }: { card: StatCardItem }) {
   return (
     <div
       style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px", padding: "20px 22px", display: "flex", flexDirection: "column", gap: "12px", flex: 1, minWidth: "160px", transition: "border-color 0.2s" }}

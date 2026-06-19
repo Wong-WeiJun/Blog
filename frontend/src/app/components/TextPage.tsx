@@ -1,10 +1,11 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { BRAND_EMAIL } from "../../lib/constants";
 
 /* ── typography primitives ─── */
 
-function PageH1({ children }: { children: React.ReactNode }) {
+function PageH1({ children }: { children: ReactNode }) {
   return (
     <h1
       style={{
@@ -22,7 +23,7 @@ function PageH1({ children }: { children: React.ReactNode }) {
   );
 }
 
-function PageH2({ children }: { children: React.ReactNode }) {
+function PageH2({ children }: { children: ReactNode }) {
   return (
     <h2
       style={{
@@ -41,7 +42,7 @@ function PageH2({ children }: { children: React.ReactNode }) {
   );
 }
 
-function PageH3({ children }: { children: React.ReactNode }) {
+function PageH3({ children }: { children: ReactNode }) {
   return (
     <h3
       style={{
@@ -59,7 +60,7 @@ function PageH3({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Para({ children }: { children: React.ReactNode }) {
+function Para({ children }: { children: ReactNode }) {
   return (
     <p
       style={{
@@ -96,7 +97,7 @@ function BulletList({ items }: { items: string[] }) {
   );
 }
 
-function Metadata({ children }: { children: React.ReactNode }) {
+function Metadata({ children }: { children: ReactNode }) {
   return (
     <p
       style={{

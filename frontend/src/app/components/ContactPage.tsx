@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { Link } from "react-router";
 import {
   Mail, Github, Linkedin, Copy, Check, Send, ArrowLeft,
@@ -18,7 +19,7 @@ function Field({
   const focusBorder = hasError ? "rgba(248,113,113,0.9)" : "rgba(80,70,229,0.6)";
   const shadow      = hasError ? "0 0 0 3px rgba(248,113,113,0.14)" : "0 0 0 3px rgba(80,70,229,0.16)";
 
-  const base: React.CSSProperties = {
+  const base: CSSProperties = {
     width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${borderColor}`,
     borderRadius: "9px", fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem",
     color: "#fff", outline: "none", boxSizing: "border-box", transition: "border-color 0.15s, box-shadow 0.15s",

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 
@@ -133,7 +134,7 @@ export function CodeBlock({ filename, language = "bash", code }: Props) {
 }
 
 /* Inline code component */
-export function InlineCode({ children }: { children: React.ReactNode }) {
+export function InlineCode({ children }: { children: ReactNode }) {
   return (
     <code
       style={{

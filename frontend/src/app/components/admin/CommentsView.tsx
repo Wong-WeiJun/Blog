@@ -1,3 +1,4 @@
+import type { ReactNode, CSSProperties } from "react";
 import { useState } from "react";
 import { CheckCircle, AlertOctagon, Trash2, Reply, ChevronDown, ChevronUp, Search, AlertTriangle } from "lucide-react";
 
@@ -39,7 +40,7 @@ function Avatar({ initials, color }: { initials: string; color: string }) {
   );
 }
 
-function ActionButton({ icon, label, color, onClick }: { icon: React.ReactNode; label: string; color?: string; onClick: () => void }) {
+function ActionButton({ icon, label, color, onClick }: { icon: ReactNode; label: string; color?: string; onClick: () => void }) {
   return (
     <button
       title={label}
@@ -132,7 +133,7 @@ export function CommentsView() {
     spam:     comments.filter(c => c.status === "spam").length,
   };
 
-  const thStyle: React.CSSProperties = {
+  const thStyle: CSSProperties = {
     fontFamily: "'Inter', sans-serif", fontSize: "0.7rem", fontWeight: 700,
     color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.07em",
     padding: "10px 14px", textAlign: "left", whiteSpace: "nowrap", userSelect: "none",

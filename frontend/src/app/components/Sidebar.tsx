@@ -1,8 +1,8 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { TrendingUp } from "lucide-react";
-import { getPopularPosts, getPublishedPosts, type Post } from "../../data/posts";
+import { getPopularPosts, getAllTags, getArchiveMonths } from "../../data/posts";
 
-function SidebarSection({ title, children }: { title: string; children: React.ReactNode }) {
+function SidebarSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px", padding: "20px 20px", display: "flex", flexDirection: "column", gap: "14px" }}>
       <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1rem", color: "#fff", paddingBottom: "10px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
@@ -15,7 +15,7 @@ function SidebarSection({ title, children }: { title: string; children: React.Re
 
 export function Sidebar() {
   const popularPosts = getPopularPosts(5);
-  const tags = getAllTagsFromPosts();
+  const tags = getAllTags();
   const archive = getArchiveMonths();
 
   return (
@@ -97,31 +97,4 @@ export function Sidebar() {
   );
 }
 
-function getAllTagsFromPosts(): { name: string; count: number; color: string }[] {
-  const map = new Map<string, { name: string; count: number; color: string }>();
-  for (const post of getPublishedPosts()) {
-    for (const tag of [post.tag, ...post.tags]) {
-      const existing = map.get(tag);
-      if (existing) {
-        existing.count++;
-      } else {
-        map.set(tag, { name: tag, count: 1, color: post.tagColor });
-      }
-    }
-  }
-  return Array.from(map.values()).sort((a, b) => b.count - a.count);
-}
 
-function getArchiveMonths(): { month: string; count: number }[] {
-  const map = new Map<string, number>();
-  for (const post of getPublishedPosts()) {
-    const parts = post.date.split(" ");
-    if (parts.length >= 2) {
-      const month = `${parts[0]} ${parts[1]}`;
-      map.set(month, (map.get(month) ?? 0) + 1);
-    }
-  }
-  return Array.from(map.entries())
-    .map(([month, count]) => ({ month, count }))
-    .sort((a, b) => b.month.localeCompare(a.month));
-}

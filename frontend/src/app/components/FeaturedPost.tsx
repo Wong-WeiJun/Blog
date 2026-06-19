@@ -1,7 +1,6 @@
 import { Link } from "react-router";
-import { ArrowRight, Clock, User } from "lucide-react";
+import { ArrowRight, User } from "lucide-react";
 import { getPublishedPosts, type Post } from "../../data/posts";
-import { BRAND_NAME } from "../../lib/constants";
 
 export function FeaturedPost({ post: postProp }: { post?: Post }) {
   const post = postProp ?? getPublishedPosts()[0];

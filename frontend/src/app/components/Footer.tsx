@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { Github, Twitter, Linkedin, Mail, Rss } from "lucide-react";
-import { BRAND_DOMAIN, BRAND_NAME, BRAND_HANDLE, BRAND_GITHUB, BRAND_TWITTER, BRAND_EMAIL, COPYRIGHT_YEAR } from "../../lib/constants";
+import { BRAND_DOMAIN, BRAND_HANDLE, BRAND_GITHUB, BRAND_TWITTER, BRAND_EMAIL, COPYRIGHT_YEAR } from "../../lib/constants";
 
 export function Footer() {
   return (

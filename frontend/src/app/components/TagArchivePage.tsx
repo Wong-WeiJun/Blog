@@ -1,12 +1,11 @@
 import { useState, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router";
+import { useParams, Link } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { getPostsByTag } from "../../data/posts";
 import { PostCard, SkeletonCard } from "./PostGrid";
 
 export function TagArchivePage() {
   const { tag } = useParams<{ tag: string }>();
-  const navigate = useNavigate();
   const [visibleCount, setVisibleCount] = useState(4);
   const [loading, setLoading] = useState(false);
 

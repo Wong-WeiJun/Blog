@@ -1,3 +1,4 @@
+import type { CSSProperties, ChangeEvent } from "react";
 import { useState, useRef } from "react";
 import { Camera, Check, CheckCircle2, Loader2 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
@@ -9,7 +10,7 @@ function Field({
   label: string; value: string; onChange: (v: string) => void; type?: string;
   placeholder?: string; hint?: string; rows?: number; maxLength?: number; readOnly?: boolean;
 }) {
-  const baseStyle: React.CSSProperties = {
+  const baseStyle: CSSProperties = {
     width: "100%", background: readOnly ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.1)", borderRadius: "9px",
     fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", color: readOnly ? "rgba(255,255,255,0.45)" : "#fff",
@@ -54,7 +55,7 @@ function AvatarUpload({ name }: { name: string }) {
   const [hover, setHover] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -121,7 +122,7 @@ export function AdminProfileView() {
     setTimeout(() => { setLoading(false); setSaved(true); setTimeout(() => setSaved(false), 2500); }, 1000);
   };
 
-  const cardStyle: React.CSSProperties = {
+  const cardStyle: CSSProperties = {
     background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)",
     borderRadius: "12px", padding: "24px 24px",
   };

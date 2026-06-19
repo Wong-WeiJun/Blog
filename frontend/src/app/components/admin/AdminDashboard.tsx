@@ -13,7 +13,7 @@ import { useState } from "react";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const [view, setView]                   = useState<AdminView>("overview");
   const [search, setSearch]               = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

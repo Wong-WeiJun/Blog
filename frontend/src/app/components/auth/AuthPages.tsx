@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { Eye, EyeOff, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Check } from "lucide-react";
@@ -98,7 +99,7 @@ function Field({ label, type = "text", value, onChange, placeholder, error, auto
   );
 }
 
-function PrimaryButton({ children, onClick, loading }: { children: React.ReactNode; onClick: () => void; loading?: boolean }) {
+function PrimaryButton({ children, onClick, loading }: { children: ReactNode; onClick: () => void; loading?: boolean }) {
   return (
     <button
       onClick={onClick}
@@ -132,7 +133,7 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
-function Card({ children }: { children: React.ReactNode }) {
+function Card({ children }: { children: ReactNode }) {
   return (
     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: "18px", padding: "36px 36px", backdropFilter: "blur(16px)", width: "100%", maxWidth: "420px", boxShadow: "0 24px 64px rgba(0,0,0,0.5)" }}>
       {children}

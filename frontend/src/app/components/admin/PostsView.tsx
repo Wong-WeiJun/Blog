@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useState } from "react";
 import { Pencil, Trash2, AlertTriangle, SearchX, Eye, ChevronUp, ChevronDown } from "lucide-react";
 import { mockPosts, type Post } from "../../../data/posts";
@@ -46,7 +47,7 @@ export function PostsView({ search, onEditPost }: Props) {
     return sortDir === "asc" ? <ChevronUp size={12} style={{ color: "#a5b4fc" }} /> : <ChevronDown size={12} style={{ color: "#a5b4fc" }} />;
   };
 
-  const thStyle: React.CSSProperties = {
+  const thStyle: CSSProperties = {
     fontFamily: "'Inter', sans-serif",
     fontSize: "0.72rem",
     fontWeight: 700,
@@ -58,7 +59,7 @@ export function PostsView({ search, onEditPost }: Props) {
     whiteSpace: "nowrap",
     userSelect: "none",
   };
-  const tdStyle: React.CSSProperties = {
+  const tdStyle: CSSProperties = {
     fontFamily: "'Inter', sans-serif",
     fontSize: "0.875rem",
     color: "rgba(255,255,255,0.75)",

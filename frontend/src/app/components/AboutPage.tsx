@@ -1,15 +1,16 @@
 import { Link } from "react-router";
+import type { ReactNode } from "react";
 import {
-  Download, Github, Linkedin, ExternalLink, ArrowLeft,
+  Download, Github, Linkedin, ArrowLeft,
   Cloud, Server, GitBranch, Terminal, Database, Layers,
   Coffee, BookOpen, Music, Gamepad2, Plane, Camera,
-  Award, GraduationCap, MapPin, Calendar, ChevronRight,
+  MapPin, Calendar, ChevronRight,
 } from "lucide-react";
-import { BRAND_NAME, BRAND_DOMAIN, BRAND_EMAIL } from "../../lib/constants";
+import { BRAND_NAME, BRAND_EMAIL } from "../../lib/constants";
 
 /* ─── section wrapper ─── */
 
-function Section({ id, children, alt }: { id?: string; children: React.ReactNode; alt?: boolean }) {
+function Section({ id, children, alt }: { id?: string; children: ReactNode; alt?: boolean }) {
   return (
     <section
       id={id}
@@ -26,7 +27,7 @@ function Section({ id, children, alt }: { id?: string; children: React.ReactNode
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children }: { children: ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "40px" }}>
       <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: 700, color: "#5046e5", textTransform: "uppercase", letterSpacing: "0.12em" }}>
@@ -37,7 +38,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SectionHeading({ children }: { children: React.ReactNode }) {
+function SectionHeading({ children }: { children: ReactNode }) {
   return (
     <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "clamp(1.6rem, 3vw, 2.2rem)", color: "#fff", letterSpacing: "-0.02em", margin: "0 0 40px", lineHeight: 1.2 }}>
       {children}

@@ -1,11 +1,12 @@
+import type { ReactNode, CSSProperties, ChangeEvent } from "react";
 import { useState, useRef } from "react";
 import { Link } from "react-router";
 import {
-  User, Shield, AlertTriangle, Camera, Check, Eye, EyeOff,
+  User, Shield, AlertTriangle, Camera, Eye, EyeOff,
   Monitor, Smartphone, Globe, LogOut, ArrowLeft, Loader2,
   CheckCircle2, X,
 } from "lucide-react";
-import { useAuth, type AuthUser } from "../../../lib/auth-context";
+import { useAuth } from "../../../lib/auth-context";
 import { BRAND_NAME, BRAND_EMAIL } from "../../../lib/constants";
 
 /* ─── types ─── */
@@ -14,11 +15,11 @@ type SettingsTab = "profile" | "security" | "danger";
 /* ─── shared primitives ─── */
 
 function Field({
-  label, value, onChange, type = "text", placeholder, hint, error, rows, maxLength,
+  label, value, onChange, type = "text", placeholder, hint, error, rows, maxLength, autoComplete,
 }: {
   label: string; value: string; onChange: (v: string) => void;
   type?: string; placeholder?: string; hint?: string; error?: string;
-  rows?: number; maxLength?: number;
+  rows?: number; maxLength?: number; autoComplete?: string;
 }) {
   const [show, setShow] = useState(false);
   const isPassword = type === "password";
@@ -27,7 +28,7 @@ function Field({
   const focusBorder = error ? "rgba(248,113,113,0.9)" : "rgba(80,70,229,0.65)";
   const focusShadow = error ? "0 0 0 3px rgba(248,113,113,0.15)" : "0 0 0 3px rgba(80,70,229,0.18)";
 
-  const sharedStyle: React.CSSProperties = {
+  const sharedStyle: CSSProperties = {
     width: "100%", background: "rgba(255,255,255,0.05)", border: `1px solid ${borderColor}`,
     borderRadius: "9px", fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem",
     color: "#fff", outline: "none", boxSizing: "border-box", transition: "border-color 0.15s, box-shadow 0.15s",
@@ -50,7 +51,7 @@ function Field({
         ) : (
           <input
             type={inputType} value={value} onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder} maxLength={maxLength}
+            placeholder={placeholder} maxLength={maxLength} autoComplete={autoComplete}
             style={{ ...sharedStyle, padding: isPassword ? "11px 42px 11px 14px" : "11px 14px" }}
             onFocus={(e) => { e.target.style.borderColor = focusBorder; e.target.style.boxShadow = focusShadow; }}
             onBlur={(e) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = "none"; }}
@@ -107,7 +108,7 @@ function SaveButton({ onClick, loading, saved }: { onClick: () => void; loading:
   );
 }
 
-function SectionCard({ children, danger }: { children: React.ReactNode; danger?: boolean }) {
+function SectionCard({ children, danger }: { children: ReactNode; danger?: boolean }) {
   return (
     <div style={{
       background: danger ? "rgba(239,68,68,0.04)" : "rgba(255,255,255,0.025)",
@@ -119,7 +120,7 @@ function SectionCard({ children, danger }: { children: React.ReactNode; danger?:
   );
 }
 
-function SectionTitle({ children, danger }: { children: React.ReactNode; danger?: boolean }) {
+function SectionTitle({ children, danger }: { children: ReactNode; danger?: boolean }) {
   return (
     <h2 style={{
       fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.125rem",
@@ -130,7 +131,7 @@ function SectionTitle({ children, danger }: { children: React.ReactNode; danger?
   );
 }
 
-function SectionDesc({ children }: { children: React.ReactNode }) {
+function SectionDesc({ children }: { children: ReactNode }) {
   return (
     <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.4)", margin: "0 0 24px", lineHeight: 1.6 }}>
       {children}
@@ -145,7 +146,7 @@ function AvatarUpload() {
   const [hover, setHover] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -560,19 +561,15 @@ function DangerTab() {
 
 /* ─── Root component ─── */
 
-const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
+const TABS: { id: SettingsTab; label: string; icon: ReactNode }[] = [
   { id: "profile",  label: "Profile",      icon: <User size={15} /> },
   { id: "security", label: "Security",     icon: <Shield size={15} /> },
   { id: "danger",   label: "Danger Zone",  icon: <AlertTriangle size={15} /> },
 ];
 
-interface Props {
-  user?: AuthUser | null;
-}
-
-export function AccountSettings({ user: propUser }: Props = {}) {
+export function AccountSettings() {
   const { user: authUser, logout } = useAuth();
-  const user = propUser ?? authUser;
+  const user = authUser;
   const [tab, setTab] = useState<SettingsTab>("profile");
   const displayName = user?.name ?? BRAND_NAME;
   const displayRole = user?.role === "admin" ? "Blog Owner" : "Reader";

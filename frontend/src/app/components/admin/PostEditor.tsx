@@ -1,8 +1,9 @@
+import type { ReactNode, RefObject, DragEvent } from "react";
 import { useState, useRef, useCallback } from "react";
 import {
   ArrowLeft, Bold, Italic, Code, Heading2, Heading3, Link2,
   ImagePlus, Quote, Save, Send, Eye, X, Upload, Globe,
-  Calendar, Star, ChevronDown, Loader2, Check,
+  Calendar, Loader2, Check,
 } from "lucide-react";
 import { BRAND_DOMAIN } from "../../../lib/constants";
 
@@ -18,7 +19,7 @@ interface Props {
 
 function ToolBtn({
   icon, label, active, onClick,
-}: { icon: React.ReactNode; label: string; active?: boolean; onClick: () => void }) {
+}: { icon: ReactNode; label: string; active?: boolean; onClick: () => void }) {
   return (
     <button
       title={label}
@@ -41,7 +42,7 @@ function ToolBtn({
 /* ──────────────────────── rich-text toolbar ─────────────────────── */
 
 function insertWrap(
-  ref: React.RefObject<HTMLTextAreaElement | null>,
+  ref: RefObject<HTMLTextAreaElement | null>,
   setValue: (v: string) => void,
   wrap: string,
   block?: string,
@@ -63,7 +64,7 @@ function insertWrap(
   });
 }
 
-function Toolbar({ textareaRef, setValue }: { textareaRef: React.RefObject<HTMLTextAreaElement | null>; setValue: (v: string) => void }) {
+function Toolbar({ textareaRef, setValue }: { textareaRef: RefObject<HTMLTextAreaElement | null>; setValue: (v: string) => void }) {
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
 
   const toggle = (key: string, wrap: string, block?: string) => {
@@ -128,7 +129,7 @@ function CoverUpload() {
     reader.readAsDataURL(file);
   };
 
-  const onDrop = useCallback((e: React.DragEvent) => {
+  const onDrop = useCallback((e: DragEvent) => {
     e.preventDefault();
     setDragging(false);
     const file = e.dataTransfer.files[0];
@@ -422,7 +423,7 @@ function WordCountBar({ content }: { content: string }) {
 
 /* ─────────────────────── sidebar section wrapper ────────────────── */
 
-function SidebarSection({ children }: { children: React.ReactNode }) {
+function SidebarSection({ children }: { children: ReactNode }) {
   return (
     <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "10px", padding: "16px" }}>
       {children}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router";
 import {
   ArrowLeft, Github, ExternalLink, Clock, CheckCircle2, Archive,
@@ -8,7 +9,7 @@ import {
 /* ── status pill ── */
 type Status = "Completed" | "In Progress" | "Archived";
 
-const STATUS_CONFIG: Record<Status, { color: string; bg: string; border: string; icon: React.ReactNode }> = {
+const STATUS_CONFIG: Record<Status, { color: string; bg: string; border: string; icon: ReactNode }> = {
   "Completed":  { color: "#4ade80", bg: "rgba(74,222,128,0.12)",  border: "rgba(74,222,128,0.28)",  icon: <CheckCircle2 size={11} /> },
   "In Progress":{ color: "#fbbf24", bg: "rgba(251,191,36,0.12)",  border: "rgba(251,191,36,0.28)",  icon: <Clock size={11} /> },
   "Archived":   { color: "#94a3b8", bg: "rgba(148,163,184,0.1)",  border: "rgba(148,163,184,0.22)", icon: <Archive size={11} /> },
@@ -64,7 +65,7 @@ const ALL_CATEGORIES = ["All"];
 const ALL_STATUSES: Status[] = ["Completed", "In Progress", "Archived"];
 
 /* ── project card ── */
-function ProjectCard({ project }: { project: Project }) {
+export function ProjectCard({ project }: { project: Project }) {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -221,12 +222,6 @@ function StatsBar() {
 export function ProjectsPage() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeStatus,   setActiveStatus]   = useState("All");
-
-  const filtered = PROJECTS.filter(p => {
-    const catOk = activeCategory === "All" || p.category === activeCategory;
-    const stOk  = activeStatus   === "All" || p.status   === activeStatus;
-    return catOk && stOk;
-  });
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #080a1a 0%, #0a0c1e 45%, #060818 100%)", color: "#fff", fontFamily: "'Inter', sans-serif" }}>
