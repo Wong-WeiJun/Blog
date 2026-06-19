@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { createContext, useContext, useState, useCallback } from "react";
 
 export type UserRole = "admin" | "user";
@@ -21,7 +22,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
 
   const login = useCallback((role: UserRole) => {
