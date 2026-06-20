@@ -1,0 +1,141 @@
+services:
+
+  # Local services are available on their ports, but also available on:
+  # http://api.localhost.tiangolo.com: backend
+  # http://dashboard.localhost.tiangolo.com: frontend
+  # etc. To enable it, update .env, set:
+  # DOMAIN=localhost.tiangolo.com
+  proxy:
+    image: traefik:3.6
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "80:80"
+      - "8090:8080"
+    # Duplicate the command from compose.yml to add --api.insecure=true
+    command:
+      # Enable Docker in Traefik, so that it reads labels from Docker services
+      - --providers.docker
+      # Add a constraint to only use services with the label for this stack
+      - --providers.docker.constraints=Label(`traefik.constraint-label`, `traefik-public`)
+      # Do not expose all Docker services, only the ones explicitly exposed
+      - --providers.docker.exposedbydefault=false
+      # Create an entrypoint "http" listening on port 80
+      - --entrypoints.http.address=:80
+      # Create an entrypoint "https" listening on port 443
+      - --entrypoints.https.address=:443
+      # Enable the access log, with HTTP requests
+      - --accesslog
+      # Enable the Traefik log, for configurations and errors
+      - --log
+      # Enable debug logging for local development
+      - --log.level=DEBUG
+      # Enable the Dashboard and API
+      - --api
+      # Enable the Dashboard and API in insecure mode for local development
+      - --api.insecure=true
+    labels:
+      # Enable Traefik for this service, to make it available in the public network
+      - traefik.enable=true
+      - traefik.constraint-label=traefik-public
+      # Dummy https-redirect middleware that doesn't really redirect, only to
+      # allow running it locally
+      - traefik.http.middlewares.https-redirect.contenttype.autodetect=false
+    networks:
+      - traefik-public
+      - default
+
+  db:
+    restart: "no"
+    ports:
+      - "5432:5432"
+
+  adminer:
+    restart: "no"
+    ports:
+      - "8080:8080"
+
+  backend:
+    restart: "no"
+    ports:
+      - "8000:8000"
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    # command: sleep infinity  # Infinite loop to keep container alive doing nothing
+    command:
+      - fastapi
+      - run
+      - --reload
+      - "app/main.py"
+    develop:
+      watch:
+        - path: ./backend
+          action: sync
+          target: /app/backend
+          ignore:
+            - ./backend/.venv
+            - .venv
+        - path: ./backend/pyproject.toml
+          action: rebuild
+    # TODO: remove once coverage is done locally
+    volumes:
+      - ./backend/htmlcov:/app/backend/htmlcov
+    environment:
+      SMTP_HOST: "mailcatcher"
+      SMTP_PORT: "1025"
+      SMTP_TLS: "false"
+      EMAILS_FROM_EMAIL: "noreply@example.com"
+
+  mailcatcher:
+    image: schickling/mailcatcher
+    ports:
+      - "1080:1080"
+      - "1025:1025"
+
+  frontend:
+    restart: "no"
+    # NOTE: The -debian suffix is required because the slim/alpine variant
+    # of the oven/bun image ships without the bun binary in PATH.
+    image: oven/bun:1.2.23-debian
+    ports:
+      - "5173:5173"
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend:rw
+      # Anonymous volume for node_modules — container manages its own deps
+      - /app/frontend/node_modules
+      # Also isolate bun's global cache to avoid host/ architecture mismatches
+      - /app/frontend/.bun
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - NODE_ENV=development
+    command:
+      - sh
+      - -c
+      - |
+        if [ -z "$(ls -A node_modules 2>/dev/null)" ]; then
+          echo "Installing frontend dependencies..."
+          bun install
+        fi
+        bun run dev -- --host 0.0.0.0
+    networks:
+      - traefik-public
+      - default
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=5173
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.entrypoints=http
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=https
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=le
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.middlewares=https-redirect
+
+networks:
+  traefik-public:
+    # For local dev, don't expect an external Traefik network
+    external: false

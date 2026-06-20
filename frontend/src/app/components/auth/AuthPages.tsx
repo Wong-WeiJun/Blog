@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { useNavigate, Link } from "react-router";
+import { Link } from "react-router";
 import { Eye, EyeOff, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Check } from "lucide-react";
-import { useAuth, CREDENTIALS } from "../../../lib/auth-context";
-import type { UserRole } from "../../../lib/auth-context";
+import { useAuth } from "../../../lib/auth-context";
 import { BRAND_NAME, BRAND_DOMAIN } from "../../../lib/constants";
 
 /* ─── shared primitives ─── */
@@ -174,35 +173,14 @@ function PasswordStrength({ password }: { password: string }) {
 function LoginPage({ onSwitch }: NavProps) {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
-  const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
-  const { login } = useAuth();
-  const navigate = useNavigate();
-
-  const autofill = (role: UserRole) => {
-    setEmail(CREDENTIALS[role].email);
-    setPassword(CREDENTIALS[role].password);
-    setError("");
-  };
+  const { login, isLoggingIn }  = useAuth();
 
   const submit = () => {
     setError("");
     if (!email || !password) { setError("Please fill in your email and password."); return; }
     if (!email.includes("@")) { setError("That doesn't look like a valid email address."); return; }
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      const match = (Object.entries(CREDENTIALS) as [UserRole, typeof CREDENTIALS[UserRole]][])
-        .find(([, c]) => c.email === email.trim().toLowerCase() && c.password === password);
-      if (match) {
-        login(match[0]);
-        if (match[0] === "admin") navigate("/admin");
-        else navigate("/");
-      } else {
-        setError("Incorrect email or password. Please try again.");
-      }
-    }, 900);
+    login(email, password);
   };
 
   const hasError = !!error;
@@ -210,36 +188,6 @@ function LoginPage({ onSwitch }: NavProps) {
   return (
     <Card>
       <Logo />
-
-      {/* Test credentials hint */}
-      <div style={{ background: "rgba(80,70,229,0.08)", border: "1px solid rgba(80,70,229,0.22)", borderRadius: "10px", padding: "14px", marginBottom: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.7rem", fontWeight: 700, color: "rgba(165,180,252,0.7)", textTransform: "uppercase", letterSpacing: "0.09em", margin: 0 }}>
-          Test accounts
-        </p>
-        {(["admin", "user"] as UserRole[]).map((role) => (
-          <div key={role} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", background: "rgba(0,0,0,0.2)", borderRadius: "7px", padding: "9px 11px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "3px", minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.7rem", fontWeight: 700, color: role === "admin" ? "#a5b4fc" : "#6ee7b7", background: role === "admin" ? "rgba(80,70,229,0.25)" : "rgba(110,231,183,0.15)", borderRadius: "4px", padding: "1px 7px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  {role}
-                </span>
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.78rem", color: "rgba(255,255,255,0.6)" }}>{CREDENTIALS[role].name}</span>
-              </div>
-              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: "rgba(255,255,255,0.4)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {CREDENTIALS[role].email}
-              </p>
-            </div>
-            <button
-              onClick={() => autofill(role)}
-              style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", fontWeight: 600, color: "#a5b4fc", background: "rgba(80,70,229,0.18)", border: "1px solid rgba(80,70,229,0.3)", borderRadius: "6px", padding: "5px 11px", cursor: "pointer", flexShrink: 0, transition: "background 0.15s", whiteSpace: "nowrap" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(80,70,229,0.3)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(80,70,229,0.18)")}
-            >
-              Use →
-            </button>
-          </div>
-        ))}
-      </div>
 
       <div style={{ marginBottom: "24px", textAlign: "center" }}>
         <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.5rem", color: "#fff", margin: "0 0 6px", letterSpacing: "-0.015em" }}>Welcome back</h1>
@@ -254,15 +202,7 @@ function LoginPage({ onSwitch }: NavProps) {
 
         {/* Remember + Forgot */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-            <div
-              onClick={() => setRemember((r) => !r)}
-              style={{ width: "16px", height: "16px", borderRadius: "4px", border: `1.5px solid ${remember ? "#5046e5" : "rgba(255,255,255,0.25)"}`, background: remember ? "#5046e5" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s", cursor: "pointer" }}
-            >
-              {remember && <Check size={10} color="#fff" strokeWidth={3} />}
-            </div>
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "rgba(255,255,255,0.55)", userSelect: "none" }}>Remember me</span>
-          </label>
+          <div /> {/* spacer */}
           <button
             onClick={() => onSwitch("reset")}
             style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "#a5b4fc", background: "none", border: "none", cursor: "pointer", padding: 0, transition: "color 0.15s" }}
@@ -273,7 +213,7 @@ function LoginPage({ onSwitch }: NavProps) {
           </button>
         </div>
 
-        <PrimaryButton onClick={submit} loading={loading}>Sign In</PrimaryButton>
+        <PrimaryButton onClick={submit} loading={isLoggingIn}>Sign In</PrimaryButton>
       </div>
 
       <Divider label="or" />
@@ -300,9 +240,9 @@ function RegisterPage({ onSwitch }: NavProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
+  const { register, isRegistering } = useAuth();
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -317,8 +257,8 @@ function RegisterPage({ onSwitch }: NavProps) {
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length) return;
-    setLoading(true);
-    setTimeout(() => { setLoading(false); setSuccess(true); }, 1400);
+    register(name, email, password);
+    setSuccess(true);
   };
 
   if (success) {
@@ -330,14 +270,14 @@ function RegisterPage({ onSwitch }: NavProps) {
             <CheckCircle2 size={36} color="#4ade80" />
           </div>
           <div>
-            <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.5rem", color: "#fff", margin: "0 0 8px", letterSpacing: "-0.015em" }}>Check your inbox</h2>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.5rem", color: "#fff", margin: "0 0 8px", letterSpacing: "-0.015em" }}>Account created</h2>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", color: "rgba(255,255,255,0.5)", margin: "0 0 4px", lineHeight: 1.6 }}>
-              We sent a verification link to
+              Your account has been created successfully.
             </p>
             <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.875rem", color: "#a5b4fc", margin: 0 }}>{email}</p>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", margin: 0, lineHeight: 1.6, maxWidth: "300px" }}>
-            Click the link in the email to verify your account. It expires in 24 hours.
+            You can now sign in with your credentials.
           </p>
           <button
             onClick={() => onSwitch("login")}
@@ -377,7 +317,7 @@ function RegisterPage({ onSwitch }: NavProps) {
         {errors.confirm && <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "#f87171", margin: "-8px 0 0", display: "flex", alignItems: "center", gap: "4px" }}><AlertCircle size={12} />{errors.confirm}</p>}
 
         <div style={{ marginTop: "4px" }}>
-          <PrimaryButton onClick={submit} loading={loading}>Create Account</PrimaryButton>
+          <PrimaryButton onClick={submit} loading={isRegistering}>Create Account</PrimaryButton>
         </div>
       </div>
 
@@ -402,9 +342,9 @@ function RegisterPage({ onSwitch }: NavProps) {
 
 function ResetPage({ onSwitch }: NavProps) {
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const { recoverPassword, isRecoveringPassword } = useAuth();
 
   const submit = () => {
     setError("");
@@ -412,8 +352,8 @@ function ResetPage({ onSwitch }: NavProps) {
       setError("Please enter a valid email address.");
       return;
     }
-    setLoading(true);
-    setTimeout(() => { setLoading(false); setSuccess(true); }, 1200);
+    recoverPassword(email);
+    setSuccess(true);
   };
 
   if (success) {
@@ -469,7 +409,7 @@ function ResetPage({ onSwitch }: NavProps) {
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {error && <ErrorBanner message={error} />}
         <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" error={!!error} autoComplete="email" />
-        <PrimaryButton onClick={submit} loading={loading}>Send Reset Link</PrimaryButton>
+        <PrimaryButton onClick={submit} loading={isRecoveringPassword}>Send Reset Link</PrimaryButton>
       </div>
 
       <Divider label="or" />

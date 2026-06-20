@@ -1,0 +1,6 @@
+[2026-06-19T17:03:28.365Z] Error: missing input - which OpenAPI specification should we use to generate your output?
+Stack:
+Error: missing input - which OpenAPI specification should we use to generate your output?
+    at Pm (/home/sakai/Documents/Projects/BlogSite/node_modules/.bun/@hey-api+openapi-ts@0.73.0+1fb4c65d43e298b9/node_modules/@hey-api/openapi-ts/dist/index.cjs:42:76248)
+    at async d$ (/home/sakai/Documents/Projects/BlogSite/node_modules/.bun/@hey-api+openapi-ts@0.73.0+1fb4c65d43e298b9/node_modules/@hey-api/openapi-ts/dist/index.cjs:1338:4485)
+    at async start (/home/sakai/Documents/Projects/BlogSite/node_modules/.bun/@hey-api+openapi-ts@0.73.0+1fb4c65d43e298b9/node_modules/@hey-api/openapi-ts/bin/index.cjs:131:21)

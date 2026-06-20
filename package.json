@@ -1,0 +1,14 @@
+{
+  "name": "fastapi-full-stack-template",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "bun run --filter frontend dev",
+    "build": "bun run --filter frontend build",
+    "typecheck": "bun run --filter frontend typecheck",
+    "generate-client": "bun run --filter frontend generate-client",
+    "lint": "bun run --filter frontend lint"
+  }
+}

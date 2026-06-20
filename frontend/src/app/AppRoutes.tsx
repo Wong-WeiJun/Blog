@@ -24,8 +24,8 @@ function RequireAdmin() {
 
 export function AppRoutes() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<HomePage />} />
@@ -44,7 +44,7 @@ export function AppRoutes() {
             <Route path="admin/*" element={<AdminDashboard />} />
           </Route>
         </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

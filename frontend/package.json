@@ -1,16 +1,19 @@
 {
-  "name": "@figma/my-make-file",
+  "name": "frontend",
   "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate-client": "openapi-ts --input openapi.json --output src/client --client @hey-api/client-axios",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
+    "@hey-api/client-axios": "^0.9.1",
     "@mui/icons-material": "7.3.5",
     "@mui/material": "7.3.5",
     "@popperjs/core": "2.11.8",
@@ -40,6 +43,8 @@
     "@radix-ui/react-toggle": "1.1.2",
     "@radix-ui/react-toggle-group": "1.1.2",
     "@radix-ui/react-tooltip": "1.1.8",
+    "@tanstack/react-query": "^5.90.21",
+    "axios": "1.16.0",
     "canvas-confetti": "1.9.4",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
@@ -70,12 +75,13 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
+    "@hey-api/openapi-ts": "0.73.0",
     "@tailwindcss/vite": "4.1.12",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "4.7.0",
     "tailwindcss": "4.1.12",
-    "typescript": "^6.0.3",
+    "typescript": "^5.9.3",
     "vite": "6.3.5"
   },
   "peerDependencies": {
@@ -90,9 +96,10 @@
       "optional": true
     }
   },
-  "pnpm": {
-    "overrides": {
-      "vite": "6.3.5"
-    }
-  }
+  "overrides": {
+    "vite": "6.3.5"
+  },
+  "workspaces": [
+    "."
+  ]
 }

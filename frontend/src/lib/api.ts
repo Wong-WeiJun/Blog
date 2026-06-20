@@ -1,0 +1,32 @@
+import { AxiosError } from "axios";
+
+function extractErrorMessage(err: unknown): string {
+  if (err instanceof AxiosError) {
+    const detail = (err.response?.data as any)?.detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+      return detail[0].msg;
+    }
+    return detail || err.message || "Something went wrong.";
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return "Something went wrong.";
+}
+
+export const handleError = function (
+  this: (msg: string) => void,
+  err: unknown,
+) {
+  const errorMessage = extractErrorMessage(err);
+  this(errorMessage);
+};
+
+export const getInitials = (name: string): string => {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+};

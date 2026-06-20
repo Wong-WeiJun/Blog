@@ -1,13 +1,15 @@
 import type { ReactNode, CSSProperties, ChangeEvent } from "react";
 import { useState, useRef } from "react";
-import { Link } from "react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "react-router";
 import {
   User, Shield, AlertTriangle, Camera, Eye, EyeOff,
   Monitor, Smartphone, Globe, LogOut, ArrowLeft, Loader2,
   CheckCircle2, X,
 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
-import { BRAND_NAME, BRAND_EMAIL, BRAND_HANDLE } from "../../../lib/constants";
+import { type UserUpdateMe, type UpdatePassword, usersUpdateUserMe, usersUpdatePasswordMe } from "@/client";
+import useCustomToast from "../../../hooks/useCustomToast";
 
 /* ─── types ─── */
 type SettingsTab = "profile" | "security" | "danger";
@@ -154,7 +156,7 @@ function AvatarUpload() {
     reader.readAsDataURL(file);
   };
 
-  const firstLetter = BRAND_NAME[0]?.toUpperCase() ?? "Y";
+  const firstLetter = "W";
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
@@ -229,17 +231,37 @@ function AvatarUpload() {
 
 /* ─── Profile tab ─── */
 
-function ProfileTab() {
-  const [name, setName] = useState(BRAND_NAME);
-  const [username, setUsername] = useState(BRAND_HANDLE);
+function ProfileTab({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
   const [bio, setBio] = useState("");
-  const [website, setWebsite] = useState(`https://${BRAND_EMAIL.split("@")[1] ?? "yourdomain.dev"}`);
+  const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const queryClient = useQueryClient();
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: UserUpdateMe) => usersUpdateUserMe({ body: data, throwOnError: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      showSuccessToast("Profile updated successfully");
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    },
+    onError: () => {
+      showErrorToast("Failed to update profile");
+    },
+  });
 
   const save = () => {
     setLoading(true);
-    setTimeout(() => { setLoading(false); setSaved(true); setTimeout(() => setSaved(false), 2500); }, 1000);
+    updateProfileMutation.mutate(
+      { full_name: name, email },
+      {
+        onSettled: () => setLoading(false),
+      },
+    );
   };
 
   return (
@@ -251,11 +273,10 @@ function ProfileTab() {
           <AvatarUpload />
           <div style={{ height: "1px", background: "rgba(255,255,255,0.07)" }} />
           <Field label="Display name" value={name} onChange={setName} placeholder="Your name" maxLength={48} />
-          <Field label="Username" value={username} onChange={setUsername} placeholder="your-handle" hint="yourdomain.dev/@your-handle" maxLength={32} />
           <Field label="Bio" value={bio} onChange={setBio} placeholder="Tell readers a bit about yourself…" rows={4} maxLength={200} />
           <Field label="Website" value={website} onChange={setWebsite} placeholder="https://yoursite.com" type="url" />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <SaveButton onClick={save} loading={loading} saved={saved} />
+            <SaveButton onClick={save} loading={loading || updateProfileMutation.isPending} saved={saved} />
           </div>
         </div>
       </SectionCard>
@@ -264,7 +285,7 @@ function ProfileTab() {
         <SectionTitle>Email address</SectionTitle>
         <SectionDesc>Your email is private and used only for login and notifications.</SectionDesc>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <Field label="Email" value={BRAND_EMAIL} onChange={() => {}} type="email" hint="To change your email, contact support." />
+          <Field label="Email" value={email} onChange={setEmail} type="email" />
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
             <CheckCircle2 size={13} color="#4ade80" />
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "#4ade80" }}>Verified</span>
@@ -345,7 +366,7 @@ function SessionRow({ session, onRevoke }: { session: typeof SESSIONS[0]; onRevo
 
 /* ─── Security tab ─── */
 
-function SecurityTab() {
+function SecurityTab({ userEmail: _userEmail }: { userEmail: string }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -353,6 +374,20 @@ function SecurityTab() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [sessions, setSessions] = useState(SESSIONS);
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (data: UpdatePassword) => usersUpdatePasswordMe({ body: data, throwOnError: true }),
+    onSuccess: () => {
+      showSuccessToast("Password updated successfully");
+      setSaved(true);
+      setCurrent(""); setNext(""); setConfirm("");
+      setTimeout(() => setSaved(false), 2500);
+    },
+    onError: () => {
+      showErrorToast("Failed to update password. Check your current password.");
+    },
+  });
 
   const save = () => {
     const e: Record<string, string> = {};
@@ -362,7 +397,10 @@ function SecurityTab() {
     setErrors(e);
     if (Object.keys(e).length) return;
     setLoading(true);
-    setTimeout(() => { setLoading(false); setSaved(true); setCurrent(""); setNext(""); setConfirm(""); setTimeout(() => setSaved(false), 2500); }, 1100);
+    changePasswordMutation.mutate(
+      { current_password: current, new_password: next },
+      { onSettled: () => setLoading(false) },
+    );
   };
 
   return (
@@ -378,7 +416,7 @@ function SecurityTab() {
           </div>
           <Field label="Confirm new password" type="password" value={confirm} onChange={setConfirm} placeholder="••••••••" error={errors.confirm} autoComplete="new-password" />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <SaveButton onClick={save} loading={loading} saved={saved} />
+            <SaveButton onClick={save} loading={loading || changePasswordMutation.isPending} saved={saved} />
           </div>
         </div>
       </SectionCard>
@@ -485,9 +523,13 @@ function DeleteModal({ email, onCancel, onConfirm }: { email: string; onCancel: 
 
 /* ─── Danger Zone tab ─── */
 
-function DangerTab() {
+function DangerTab({ userEmail, onDelete }: { userEmail: string; onDelete: () => void }) {
   const [showModal, setShowModal] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const { logout, user } = useAuth();
+
+  // Prevent superuser from deleting themselves
+  const isSuperuser = user?.role === "admin";
 
   if (deleted) {
     return (
@@ -503,6 +545,13 @@ function DangerTab() {
     );
   }
 
+  const handleConfirmDelete = () => {
+    setShowModal(false);
+    setDeleted(true);
+    logout();
+    onDelete();
+  };
+
   return (
     <>
       <SectionCard danger>
@@ -517,12 +566,30 @@ function DangerTab() {
               <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "rgba(255,255,255,0.45)", margin: 0, lineHeight: 1.5 }}>
                 Permanently remove your account, comments, and all associated data.
               </p>
+              {isSuperuser && (
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "#fbbf24", margin: "6px 0 0" }}>
+                  Superuser accounts must be deleted via the admin panel.
+                </p>
+              )}
             </div>
             <button
               onClick={() => setShowModal(true)}
-              style={{ display: "flex", alignItems: "center", gap: "7px", padding: "10px 20px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 600, color: "#fff", background: "#dc2626", border: "none", borderRadius: "9px", cursor: "pointer", flexShrink: 0, transition: "background 0.15s, transform 0.1s" }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#b91c1c"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "#dc2626"; e.currentTarget.style.transform = "none"; }}
+              disabled={isSuperuser}
+              style={{
+                display: "flex", alignItems: "center", gap: "7px", padding: "10px 20px",
+                fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 600,
+                color: isSuperuser ? "rgba(255,255,255,0.3)" : "#fff",
+                background: isSuperuser ? "rgba(239,68,68,0.2)" : "#dc2626",
+                border: "none", borderRadius: "9px",
+                cursor: isSuperuser ? "not-allowed" : "pointer",
+                flexShrink: 0, transition: "background 0.15s, transform 0.1s",
+              }}
+              onMouseEnter={(e) => {
+                if (!isSuperuser) { e.currentTarget.style.background = "#b91c1c"; e.currentTarget.style.transform = "translateY(-1px)"; }
+              }}
+              onMouseLeave={(e) => {
+                if (!isSuperuser) { e.currentTarget.style.background = "#dc2626"; e.currentTarget.style.transform = "none"; }
+              }}
             >
               <AlertTriangle size={15} />
               Delete Account
@@ -550,9 +617,9 @@ function DangerTab() {
 
       {showModal && (
         <DeleteModal
-          email={BRAND_EMAIL}
+          email={userEmail}
           onCancel={() => setShowModal(false)}
-          onConfirm={() => { setShowModal(false); setDeleted(true); }}
+          onConfirm={handleConfirmDelete}
         />
       )}
     </>
@@ -568,12 +635,20 @@ const TABS: { id: SettingsTab; label: string; icon: ReactNode }[] = [
 ];
 
 export function AccountSettings() {
-  const { user: authUser, logout } = useAuth();
-  const user = authUser;
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<SettingsTab>("profile");
-  const displayName = user?.name ?? BRAND_NAME;
+  const displayName = user?.name ?? "User";
   const displayRole = user?.role === "admin" ? "Blog Owner" : "Reader";
-  const avatarColor = user?.role === "admin" ? { bg: "linear-gradient(135deg, rgba(80,70,229,0.5), rgba(129,140,248,0.35))", border: "rgba(80,70,229,0.5)", text: "#a5b4fc" } : { bg: "linear-gradient(135deg, rgba(110,231,183,0.4), rgba(52,211,153,0.3))", border: "rgba(110,231,183,0.5)", text: "#6ee7b7" };
+  const displayEmail = user?.email ?? "";
+  const avatarColor = user?.role === "admin"
+    ? { bg: "linear-gradient(135deg, rgba(80,70,229,0.5), rgba(129,140,248,0.35))", border: "rgba(80,70,229,0.5)", text: "#a5b4fc" }
+    : { bg: "linear-gradient(135deg, rgba(110,231,183,0.4), rgba(52,211,153,0.3))", border: "rgba(110,231,183,0.5)", text: "#6ee7b7" };
+
+  const handleDelete = () => {
+    logout();
+    navigate("/");
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #080a1a 0%, #0a0c1e 45%, #060818 100%)", color: "#fff", fontFamily: "'Inter', sans-serif" }}>
@@ -648,9 +723,9 @@ export function AccountSettings() {
 
         {/* Main content */}
         <main style={{ flex: 1, minWidth: 0 }}>
-          {tab === "profile"  && <ProfileTab />}
-          {tab === "security" && <SecurityTab />}
-          {tab === "danger"   && <DangerTab />}
+          {tab === "profile"  && <ProfileTab user={user} />}
+          {tab === "security" && <SecurityTab userEmail={displayEmail} />}
+          {tab === "danger"   && <DangerTab userEmail={displayEmail} onDelete={handleDelete} />}
         </main>
       </div>
     </div>
