@@ -165,22 +165,27 @@ jobs:
           DOCKER_IMAGE_FRONTEND=frontend
           TAG=latest
           EOF
-      - run: docker compose build
-      - run: docker compose down -v --remove-orphans
+      # -f compose.yml -f compose.ci.yml deliberately excludes
+      # compose.override.yml: that file is dev-only (runs frontend as a
+      # live bun dev server via volume mount) and would otherwise get
+      # auto-merged here, which both defeats the point of a production
+      # smoke test and corrupts the oven/bun image tag during `build`.
+      - run: docker compose -f compose.yml -f compose.ci.yml build
+      - run: docker compose -f compose.yml -f compose.ci.yml down -v --remove-orphans
       - name: Create external traefik-public network
         run: docker network create traefik-public || true
-      - run: docker compose up -d --wait backend frontend
+      - run: docker compose -f compose.yml -f compose.ci.yml up -d --wait backend frontend
       - name: Dump container logs on failure
         if: failure()
         run: |
           echo "::group::frontend logs"
-          docker compose logs frontend
+          docker compose -f compose.yml -f compose.ci.yml logs frontend
           echo "::endgroup::"
           echo "::group::backend logs"
-          docker compose logs backend
+          docker compose -f compose.yml -f compose.ci.yml logs backend
           echo "::endgroup::"
       - name: Health check backend
         run: curl -f http://localhost:8000/api/v1/utils/health-check/
       - name: Health check frontend
         run: curl -f http://localhost:5173
-      - run: docker compose down -v --remove-orphans
+      - run: docker compose -f compose.yml -f compose.ci.yml down -v --remove-orphans
