@@ -86,7 +86,11 @@ jobs:
           FIRST_SUPERUSER=admin@example.com
           FIRST_SUPERUSER_PASSWORD=changethis
 
-          POSTGRES_SERVER=db
+          # localhost, not 'db': prestart.sh and pytest run via uv on the
+          # bare runner here, not inside a container, so they reach Postgres
+          # through the published port from compose.override.yml, not
+          # Docker's internal network DNS.
+          POSTGRES_SERVER=localhost
           POSTGRES_PORT=5432
           POSTGRES_DB=app
           POSTGRES_USER=postgres
@@ -166,6 +170,15 @@ jobs:
       - name: Create external traefik-public network
         run: docker network create traefik-public || true
       - run: docker compose up -d --wait backend frontend
+      - name: Dump container logs on failure
+        if: failure()
+        run: |
+          echo "::group::frontend logs"
+          docker compose logs frontend
+          echo "::endgroup::"
+          echo "::group::backend logs"
+          docker compose logs backend
+          echo "::endgroup::"
       - name: Health check backend
         run: curl -f http://localhost:8000/api/v1/utils/health-check/
       - name: Health check frontend
