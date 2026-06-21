@@ -124,3 +124,19 @@ class Post(SQLModel, table=True):
         default_factory=get_datetime_utc, sa_type=DateTime(timezone=True)
     )
     tags: list[Tag] = Relationship(link_model=PostTagLink)
+
+
+class Comment(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    post_id: uuid.UUID = Field(foreign_key="post.id", index=True)
+    author_id: uuid.UUID = Field(foreign_key="user.id")
+    parent_id: uuid.UUID | None = Field(default=None, foreign_key="comment.id")
+    body: str
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc, sa_type=DateTime(timezone=True)
+    )
+
+
+class CommentLike(SQLModel, table=True):
+    comment_id: uuid.UUID = Field(foreign_key="comment.id", primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
