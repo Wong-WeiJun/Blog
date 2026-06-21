@@ -85,3 +85,42 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=128)
+
+
+class Tag(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(unique=True, index=True)
+    color: str
+
+
+class PostTagLink(SQLModel, table=True):
+    post_id: uuid.UUID = Field(foreign_key="post.id", primary_key=True)
+    tag_id: uuid.UUID = Field(foreign_key="tag.id", primary_key=True)
+
+
+class PostStatus(str, Enum):
+    draft = "draft"
+    published = "published"
+
+
+class Post(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    slug: str = Field(unique=True, index=True)
+    title: str
+    excerpt: str
+    content: str
+    status: PostStatus = PostStatus.draft
+    featured: bool = False
+    cover_image_url: str | None = None
+    meta_title: str | None = None
+    meta_description: str | None = None
+    view_count: int = 0
+    author_id: uuid.UUID = Field(foreign_key="user.id")
+    published_at: datetime | None = None
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc, sa_type=DateTime(timezone=True)
+    )
+    updated_at: datetime = Field(
+        default_factory=get_datetime_utc, sa_type=DateTime(timezone=True)
+    )
+    tags: list[Tag] = Relationship(link_model=PostTagLink)
