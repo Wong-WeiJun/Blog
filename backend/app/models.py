@@ -1,9 +1,10 @@
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
+
 from pydantic import EmailStr
 from sqlalchemy import DateTime
-from sqlmodel import Field, SQLModel, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 
 def get_datetime_utc() -> datetime:
