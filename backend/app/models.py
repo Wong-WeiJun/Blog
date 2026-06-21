@@ -140,3 +140,15 @@ class Comment(SQLModel, table=True):
 class CommentLike(SQLModel, table=True):
     comment_id: uuid.UUID = Field(foreign_key="comment.id", primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
+
+
+class ContactSubmission(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str
+    email: EmailStr
+    subject: str
+    message: str
+    email_sent: bool = False
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc, sa_type=DateTime(timezone=True)
+    )
