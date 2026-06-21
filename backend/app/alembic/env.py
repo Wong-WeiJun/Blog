@@ -1,4 +1,3 @@
-import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -20,6 +19,7 @@ fileConfig(config.config_file_name)
 # target_metadata = None
 
 from app.models import SQLModel  # noqa
+from app.models import Tag, Post, PostTagLink  # noqa -- ensure tables are registered in metadata
 from app.core.config import settings # noqa
 
 target_metadata = SQLModel.metadata
