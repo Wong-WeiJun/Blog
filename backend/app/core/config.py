@@ -113,5 +113,7 @@ class Settings(BaseSettings):
 
         return self
 
+    DEFAULT_PAGE_SIZE: int = 10
+
 
 settings = Settings()  # type: ignore
