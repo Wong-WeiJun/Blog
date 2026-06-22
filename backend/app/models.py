@@ -135,6 +135,13 @@ class PostResponse(SQLModel):
     published_at: datetime | None
 
 
+class PaginatedPostsResponse(SQLModel):
+    posts: list[PostResponse]
+    total: int
+    page: int
+    limit: int
+
+
 class Comment(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     post_id: uuid.UUID = Field(foreign_key="post.id", index=True)
