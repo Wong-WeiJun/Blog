@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from enum import Enum
 
-from pydantic import EmailStr, ConfigDict
+from pydantic import EmailStr, ConfigDict, model_validator
 from sqlalchemy import DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -94,6 +94,11 @@ class Tag(SQLModel, table=True):
     color: str
 
 
+class TagResponse(SQLModel):
+    name: str
+    color: str
+
+
 class PostTagLink(SQLModel, table=True):
     post_id: uuid.UUID = Field(foreign_key="post.id", primary_key=True)
     tag_id: uuid.UUID = Field(foreign_key="tag.id", primary_key=True)
@@ -128,11 +133,30 @@ class Post(SQLModel, table=True):
 
 
 class PostResponse(SQLModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: uuid.UUID
-    author_id: uuid.UUID
+    slug: str
+    title: str
+    excerpt: str
+    status: PostStatus
+    featured: bool
+    cover_image_url: str | None
+    meta_title: str | None
+    meta_description: str | None
+    view_count: int
     published_at: datetime | None
+    created_at: datetime
+    tags: list[TagResponse] = []
+    content: str | None = None
+    read_time: str = ""  # computed below
+
+    @model_validator(mode="after")
+    def compute_read_time(self) -> "PostResponse":
+        words = len(self.content.split())
+        minutes = max(1, words // 200)
+        self.read_time = f"{minutes} min"
+        return self
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PaginatedPostsResponse(SQLModel):
