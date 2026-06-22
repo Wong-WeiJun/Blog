@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from enum import Enum
 
-from pydantic import EmailStr
+from pydantic import EmailStr, ConfigDict
 from sqlalchemy import DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -125,6 +125,14 @@ class Post(SQLModel, table=True):
         default_factory=get_datetime_utc, sa_type=DateTime(timezone=True)
     )
     tags: list[Tag] = Relationship(link_model=PostTagLink)
+
+
+class PostResponse(SQLModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    author_id: uuid.UUID
+    published_at: datetime | None
 
 
 class Comment(SQLModel, table=True):
