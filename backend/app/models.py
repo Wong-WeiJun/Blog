@@ -166,6 +166,32 @@ class PaginatedPostsResponse(SQLModel):
     limit: int
 
 
+class PostCreate(SQLModel):
+    slug: str = Field(min_length=1, max_length=255)
+    title: str = Field(min_length=1, max_length=255)
+    excerpt: str = Field(min_length=1, max_length=1000)
+    content: str = Field(min_length=1)
+    status: PostStatus = PostStatus.draft
+    featured: bool = False
+    cover_image_url: str | None = Field(default=None, max_length=1000)
+    meta_title: str | None = Field(default=None, max_length=255)
+    meta_description: str | None = Field(default=None, max_length=500)
+    tag_names: list[str] = []
+
+
+class PostUpdate(SQLModel):
+    slug: str | None = Field(default=None, min_length=1, max_length=255)
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    excerpt: str | None = Field(default=None, min_length=1, max_length=1000)
+    content: str | None = Field(default=None, min_length=1)
+    status: PostStatus | None = None
+    featured: bool | None = None
+    cover_image_url: str | None = Field(default=None, max_length=1000)
+    meta_title: str | None = Field(default=None, max_length=255)
+    meta_description: str | None = Field(default=None, max_length=500)
+    tag_names: list[str] | None = None
+
+
 class Comment(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     post_id: uuid.UUID = Field(foreign_key="post.id", index=True)
