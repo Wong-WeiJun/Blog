@@ -1,17 +1,19 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Query
+from sqlmodel import func, select
+
 from app.api.deps import (
     SessionDep,
 )
-from sqlmodel import select, func
-from typing import Annotated
 from app.core.config import settings
 from app.models import (
-    Post,
     PaginatedPostsResponse,
-    PostTagLink,
-    Tag,
+    Post,
     PostResponse,
     PostStatus,
+    PostTagLink,
+    Tag,
 )
 
 router = APIRouter(tags=["posts"])

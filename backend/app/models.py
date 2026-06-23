@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from enum import Enum
 
-from pydantic import EmailStr, ConfigDict, model_validator
+from pydantic import ConfigDict, EmailStr, model_validator
 from sqlalchemy import DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
