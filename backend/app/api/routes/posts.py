@@ -1,18 +1,25 @@
+import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException
+from sqlmodel import Session
 from sqlmodel import func, select
 
 from app.api.deps import (
+    CurrentUser,
     SessionDep,
+    get_current_active_superuser,
 )
 from app.core.config import settings
 from app.models import (
+    Message,
     PaginatedPostsResponse,
     Post,
+    PostCreate,
     PostResponse,
     PostStatus,
     PostTagLink,
+    PostUpdate,
     Tag,
 )
 
@@ -77,4 +84,116 @@ def read_post(
     except Exception:
         session.rollback()
 
+    return PostResponse.model_validate(post)
+
+
+def _get_or_create_tags(session: Session, tag_names: list[str]) -> list[Tag]:
+    tags = []
+    for name in tag_names:
+        tag = session.exec(select(Tag).where(Tag.name == name)).first()
+        if not tag:
+            tag = Tag(name=name, color="#5046e5")
+            session.add(tag)
+            session.commit()
+            session.refresh(tag)
+        tags.append(tag)
+    return tags
+
+
+@router.post(
+    "",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=PostResponse,
+)
+def create_post(
+    *, session: SessionDep, post_in: PostCreate, current_user: CurrentUser
+) -> PostResponse:
+    existing = session.exec(select(Post).where(Post.slug == post_in.slug)).first()
+    if existing:
+        raise HTTPException(
+            status_code=409, detail="Post with this slug already exists"
+        )
+
+    post_data = post_in.model_dump(exclude={"tag_names"})
+    post = Post.model_validate(post_data, update={"author_id": current_user.id})
+    session.add(post)
+    session.commit()
+    session.refresh(post)
+
+    if post_in.tag_names:
+        post.tags = _get_or_create_tags(session, post_in.tag_names)
+        session.add(post)
+        session.commit()
+        session.refresh(post)
+
+    return PostResponse.model_validate(post)
+
+
+@router.put(
+    "/{post_id}",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=PostResponse,
+)
+def update_post(
+    *, session: SessionDep, post_id: uuid.UUID, post_in: PostUpdate
+) -> PostResponse:
+    post = session.get(Post, post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    if post_in.slug and post_in.slug != post.slug:
+        existing = session.exec(select(Post).where(Post.slug == post_in.slug)).first()
+        if existing:
+            raise HTTPException(
+                status_code=409, detail="Post with this slug already exists"
+            )
+
+    update_data = post_in.model_dump(exclude_unset=True)
+    tag_names = update_data.pop("tag_names", None)
+
+    for field, value in update_data.items():
+        setattr(post, field, value)
+
+    if tag_names is not None:
+        post.tags = _get_or_create_tags(session, tag_names)
+
+    session.add(post)
+    session.commit()
+    session.refresh(post)
+    return PostResponse.model_validate(post)
+
+
+@router.delete(
+    "/{post_id}",
+    dependencies=[Depends(get_current_active_superuser)],
+)
+def delete_post(*, session: SessionDep, post_id: uuid.UUID) -> Message:
+    post = session.get(Post, post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    session.delete(post)
+    session.commit()
+    return Message(message="Post deleted successfully")
+
+
+@router.post(
+    "/{post_id}/publish",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=PostResponse,
+)
+def publish_post(*, session: SessionDep, post_id: uuid.UUID) -> PostResponse:
+    from datetime import datetime, timezone
+
+    post = session.get(Post, post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    post.status = PostStatus.published
+    if not post.published_at:
+        post.published_at = datetime.now(timezone.utc)
+
+    session.add(post)
+    session.commit()
+    session.refresh(post)
     return PostResponse.model_validate(post)
