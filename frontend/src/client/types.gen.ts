@@ -65,6 +65,96 @@ export type NewPassword = {
 };
 
 /**
+ * PaginatedPostsResponse
+ */
+export type PaginatedPostsResponse = {
+    /**
+     * Posts
+     */
+    posts: Array<PostResponse>;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Page
+     */
+    page: number;
+    /**
+     * Limit
+     */
+    limit: number;
+};
+
+/**
+ * PostResponse
+ */
+export type PostResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Excerpt
+     */
+    excerpt: string;
+    status: PostStatus;
+    /**
+     * Featured
+     */
+    featured: boolean;
+    /**
+     * Cover Image Url
+     */
+    cover_image_url: string | null;
+    /**
+     * Meta Title
+     */
+    meta_title: string | null;
+    /**
+     * Meta Description
+     */
+    meta_description: string | null;
+    /**
+     * View Count
+     */
+    view_count: number;
+    /**
+     * Published At
+     */
+    published_at: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Tags
+     */
+    tags?: Array<TagResponse>;
+    /**
+     * Content
+     */
+    content?: string | null;
+    /**
+     * Read Time
+     */
+    read_time?: string;
+};
+
+/**
+ * PostStatus
+ */
+export type PostStatus = 'draft' | 'published';
+
+/**
  * PrivateUserCreate
  */
 export type PrivateUserCreate = {
@@ -84,6 +174,20 @@ export type PrivateUserCreate = {
      * Is Verified
      */
     is_verified?: boolean;
+};
+
+/**
+ * TagResponse
+ */
+export type TagResponse = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Color
+     */
+    color: string;
 };
 
 /**
@@ -698,6 +802,48 @@ export type UtilsHealthCheckResponses = {
 };
 
 export type UtilsHealthCheckResponse = UtilsHealthCheckResponses[keyof UtilsHealthCheckResponses];
+
+export type PostsReadPostsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Tag
+         */
+        tag?: string | null;
+        /**
+         * Search
+         */
+        search?: string | null;
+        /**
+         * Page
+         */
+        page?: number;
+    };
+    url: '/api/v1/posts';
+};
+
+export type PostsReadPostsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PostsReadPostsError = PostsReadPostsErrors[keyof PostsReadPostsErrors];
+
+export type PostsReadPostsResponses = {
+    /**
+     * Successful Response
+     */
+    200: PaginatedPostsResponse;
+};
+
+export type PostsReadPostsResponse = PostsReadPostsResponses[keyof PostsReadPostsResponses];
 
 export type PrivateCreateUserData = {
     body: PrivateUserCreate;
