@@ -60,15 +60,9 @@ def read_posts(
 @router.get("/{slug}", response_model=PostResponse)
 def read_post(
     session: SessionDep,
-    _limit: Annotated[
-        int, Query(ge=1, le=100, alias="limit")
-    ] = settings.DEFAULT_PAGE_SIZE,
-    _tag: str | None = Query(None, alias="tag"),
-    _search: str | None = Query(None, alias="search"),
-    _page: Annotated[int, Query(ge=1, alias="page")] = 1,
-    slug: str = Query(..., description="The slug of the post to retrieve"),
+    slug: str,
 ) -> PostResponse:
-
+    # slug is a path parameter — must NOT be declared as Query(...)
     statement = select(Post).where(
         Post.slug == slug, Post.status == PostStatus.published
     )

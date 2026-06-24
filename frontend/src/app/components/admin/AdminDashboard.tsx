@@ -18,7 +18,7 @@ export function AdminDashboard() {
   const [search, setSearch]               = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [editorOpen, setEditorOpen]       = useState(false);
-  const [editTitle, setEditTitle]         = useState("");
+  const [editSlug, setEditSlug]           = useState("");
 
   const handleNavigate = (v: AdminView) => {
     setView(v);
@@ -34,7 +34,7 @@ export function AdminDashboard() {
 
   // Post editor takes full screen
   if (editorOpen) {
-    return <PostEditor onBack={() => { setEditorOpen(false); setEditTitle(""); }} initialTitle={editTitle} />;
+    return <PostEditor onBack={() => { setEditorOpen(false); setEditSlug(""); }} initialSlug={editSlug} />;
   }
 
   return (
@@ -93,7 +93,7 @@ export function AdminDashboard() {
 
           {/* View renderer */}
           {view === "overview"  && <OverviewView />}
-          {view === "posts"     && <PostsView search={search} onEditPost={(t) => { setEditTitle(t); setEditorOpen(true); }} />}
+          {view === "posts"     && <PostsView search={search} onEditPost={(slug) => { setEditSlug(slug); setEditorOpen(true); }} /> }
           {view === "profile"   && <AdminProfileView />}
           {view === "comments"  && <CommentsView />}
           {view === "tags"      && <PlaceholderView label="Tags" />}

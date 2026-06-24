@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { readPosts } from "@/client/sdk.gen"; // exists after pnpm generate-client
+import { postsReadPosts } from "@/client/sdk.gen"; // exists after pnpm generate-client
 import type { PostResponse } from "@/client/types.gen";
 
 // ─── Tag filter list ────────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ export function PostGrid() {
   const { data, isFetching, isError } = useQuery({
     queryKey: ["posts", { page, activeTag }],
     queryFn: () =>
-      readPosts({
+      postsReadPosts({
         query: {
           page,
           limit: 10,

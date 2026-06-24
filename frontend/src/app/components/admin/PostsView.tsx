@@ -8,7 +8,7 @@ type SortDir = "asc" | "desc";
 
 interface Props {
   search: string;
-  onEditPost?: (title: string) => void;
+  onEditPost?: (slug: string) => void;
 }
 
 export function PostsView({ search, onEditPost }: Props) {
@@ -195,7 +195,7 @@ export function PostsView({ search, onEditPost }: Props) {
                           <div style={{ display: "inline-flex", gap: "4px" }}>
                             <button
                               title="Edit"
-                              onClick={() => onEditPost?.(post.title)}
+                              onClick={() => onEditPost?.(post.slug)}
                               style={{ padding: "6px", borderRadius: "7px", background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.35)", transition: "color 0.15s, background 0.15s" }}
                               onMouseEnter={(e) => { e.currentTarget.style.color = "#a5b4fc"; e.currentTarget.style.background = "rgba(80,70,229,0.12)"; }}
                               onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.35)"; e.currentTarget.style.background = "transparent"; }}

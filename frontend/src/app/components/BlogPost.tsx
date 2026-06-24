@@ -8,9 +8,9 @@ import "highlight.js/styles/github-dark.css";
 import { ReadingProgress } from "./ReadingProgress";
 import { CodeBlock, InlineCode } from "./CodeBlock";
 import { CommentSection } from "./CommentSection";
-import type { Post } from "../../data/posts";
+import type { PostResponse } from "../../client/types.gen";
 
-export function BlogPost({ post }: { post: Post }) {
+export function BlogPost({ post }: { post: PostResponse }) {
   const navigate = useNavigate();
   const [bookmarked, setBookmarked] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -42,15 +42,15 @@ export function BlogPost({ post }: { post: Post }) {
       <header className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-8">
         {/* Tag pills */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "20px" }}>
-          {[post.tag, ...post.tags].slice(0, 4).map((tag) => (
+          {(post.tags ?? []).slice(0, 4).map((tag) => (
             <Link
-              key={tag}
-              to={`/tag/${tag}`}
-              style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", fontWeight: 600, color: post.tagColor, background: `${post.tagColor}18`, border: `1px solid ${post.tagColor}38`, borderRadius: "6px", padding: "4px 11px", textDecoration: "none", transition: "background 0.15s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = `${post.tagColor}30`)}
-              onMouseLeave={(e) => (e.currentTarget.style.background = `${post.tagColor}18`)}
+              key={tag.name}
+              to={`/tag/${tag.name}`}
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", fontWeight: 600, color: tag.color, background: `${tag.color}18`, border: `1px solid ${tag.color}38`, borderRadius: "6px", padding: "4px 11px", textDecoration: "none", transition: "background 0.15s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = `${tag.color}30`)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = `${tag.color}18`)}
             >
-              {tag}
+              {tag.name}
             </Link>
           ))}
         </div>
@@ -71,19 +71,21 @@ export function BlogPost({ post }: { post: Post }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", paddingBottom: "24px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(80,70,229,0.35)", border: "2px solid rgba(80,70,229,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "'Fraunces', serif", fontSize: "1.1rem", fontWeight: 700, color: "#a5b4fc" }}>{post.author[0].toUpperCase()}</span>
+              <span style={{ fontFamily: "'Fraunces', serif", fontSize: "1.1rem", fontWeight: 700, color: "#a5b4fc" }}>{post.slug[0].toUpperCase()}</span>
             </div>
             <div>
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", fontWeight: 600, color: "#fff", margin: 0 }}>{post.author}</p>
-              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>{post.date}</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", fontWeight: 600, color: "#fff", margin: 0 }}>Author</p>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>
+                {post.published_at ? new Date(post.published_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : ""}
+              </p>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: "rgba(255,255,255,0.35)" }}>
-              <Clock size={12} />{post.readTime}
+              <Clock size={12} />{post.read_time}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: "rgba(255,255,255,0.35)" }}>
-              <Eye size={12} />{post.views.toLocaleString()} views
+              <Eye size={12} />{(post.view_count ?? 0).toLocaleString()} views
             </div>
             {/* Share buttons */}
             <div style={{ display: "flex", gap: "6px" }}>

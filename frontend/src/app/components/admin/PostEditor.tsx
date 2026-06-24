@@ -11,6 +11,7 @@ import { BRAND_DOMAIN } from "../../../lib/constants";
 
 interface Props {
   onBack: () => void;
+  initialSlug?: string;
   initialTitle?: string;
   initialContent?: string;
 }

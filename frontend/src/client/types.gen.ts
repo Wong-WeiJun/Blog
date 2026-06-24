@@ -87,6 +87,49 @@ export type PaginatedPostsResponse = {
 };
 
 /**
+ * PostCreate
+ */
+export type PostCreate = {
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Excerpt
+     */
+    excerpt: string;
+    /**
+     * Content
+     */
+    content: string;
+    status?: PostStatus;
+    /**
+     * Featured
+     */
+    featured?: boolean;
+    /**
+     * Cover Image Url
+     */
+    cover_image_url?: string | null;
+    /**
+     * Meta Title
+     */
+    meta_title?: string | null;
+    /**
+     * Meta Description
+     */
+    meta_description?: string | null;
+    /**
+     * Tag Names
+     */
+    tag_names?: Array<string>;
+};
+
+/**
  * PostResponse
  */
 export type PostResponse = {
@@ -153,6 +196,49 @@ export type PostResponse = {
  * PostStatus
  */
 export type PostStatus = 'draft' | 'published';
+
+/**
+ * PostUpdate
+ */
+export type PostUpdate = {
+    /**
+     * Slug
+     */
+    slug?: string | null;
+    /**
+     * Title
+     */
+    title?: string | null;
+    /**
+     * Excerpt
+     */
+    excerpt?: string | null;
+    /**
+     * Content
+     */
+    content?: string | null;
+    status?: PostStatus | null;
+    /**
+     * Featured
+     */
+    featured?: boolean | null;
+    /**
+     * Cover Image Url
+     */
+    cover_image_url?: string | null;
+    /**
+     * Meta Title
+     */
+    meta_title?: string | null;
+    /**
+     * Meta Description
+     */
+    meta_description?: string | null;
+    /**
+     * Tag Names
+     */
+    tag_names?: Array<string> | null;
+};
 
 /**
  * PrivateUserCreate
@@ -844,6 +930,151 @@ export type PostsReadPostsResponses = {
 };
 
 export type PostsReadPostsResponse = PostsReadPostsResponses[keyof PostsReadPostsResponses];
+
+export type PostsCreatePostData = {
+    body: PostCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/posts';
+};
+
+export type PostsCreatePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PostsCreatePostError = PostsCreatePostErrors[keyof PostsCreatePostErrors];
+
+export type PostsCreatePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: PostResponse;
+};
+
+export type PostsCreatePostResponse = PostsCreatePostResponses[keyof PostsCreatePostResponses];
+
+export type PostsReadPostData = {
+    body?: never;
+    path: {
+        /**
+         * Slug
+         */
+        slug: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{slug}';
+};
+
+export type PostsReadPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PostsReadPostError = PostsReadPostErrors[keyof PostsReadPostErrors];
+
+export type PostsReadPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: PostResponse;
+};
+
+export type PostsReadPostResponse = PostsReadPostResponses[keyof PostsReadPostResponses];
+
+export type PostsDeletePostData = {
+    body?: never;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_id}';
+};
+
+export type PostsDeletePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PostsDeletePostError = PostsDeletePostErrors[keyof PostsDeletePostErrors];
+
+export type PostsDeletePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type PostsDeletePostResponse = PostsDeletePostResponses[keyof PostsDeletePostResponses];
+
+export type PostsUpdatePostData = {
+    body: PostUpdate;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_id}';
+};
+
+export type PostsUpdatePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PostsUpdatePostError = PostsUpdatePostErrors[keyof PostsUpdatePostErrors];
+
+export type PostsUpdatePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: PostResponse;
+};
+
+export type PostsUpdatePostResponse = PostsUpdatePostResponses[keyof PostsUpdatePostResponses];
+
+export type PostsPublishPostData = {
+    body?: never;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_id}/publish';
+};
+
+export type PostsPublishPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PostsPublishPostError = PostsPublishPostErrors[keyof PostsPublishPostErrors];
+
+export type PostsPublishPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: PostResponse;
+};
+
+export type PostsPublishPostResponse = PostsPublishPostResponses[keyof PostsPublishPostResponses];
 
 export type PrivateCreateUserData = {
     body: PrivateUserCreate;

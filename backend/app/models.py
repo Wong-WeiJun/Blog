@@ -151,7 +151,7 @@ class PostResponse(SQLModel):
 
     @model_validator(mode="after")
     def compute_read_time(self) -> "PostResponse":
-        words = len(self.content.split())
+        words = len(self.content.split()) if self.content else 0
         minutes = max(1, words // 200)
         self.read_time = f"{minutes} min"
         return self
