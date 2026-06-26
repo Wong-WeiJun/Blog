@@ -32,8 +32,9 @@ export function PostsView({ search, onEditPost, onNewPost }: Props) {
       }),
   });
 
-  const posts: PostResponse[] = data?.data?.posts ?? [];
-  const total: number = data?.data?.total ?? 0;
+  const paginatedData = data?.data as { posts: PostResponse[]; total: number } | undefined;
+  const posts: PostResponse[] = paginatedData?.posts ?? [];
+  const total: number = paginatedData?.total ?? 0;
   const totalPages = Math.ceil(total / 20);
 
   const deleteMutation = useMutation({
