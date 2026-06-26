@@ -10,62 +10,43 @@ import { PostEditor } from "./PostEditor";
 import { CommentsView } from "./CommentsView";
 import { AnalyticsView } from "./AnalyticsView";
 import { useState } from "react";
+import type { PostResponse } from "@/client/types.gen";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const [view, setView]                   = useState<AdminView>("overview");
-  const [search, setSearch]               = useState("");
+  const [view, setView]                         = useState<AdminView>("overview");
+  const [search, setSearch]                     = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [editorOpen, setEditorOpen]       = useState(false);
-  const [editSlug, setEditSlug]           = useState("");
+  const [editorOpen, setEditorOpen]             = useState(false);
+  const [editingPost, setEditingPost]           = useState<PostResponse | null>(null);
 
-  const handleNavigate = (v: AdminView) => {
-    setView(v);
-    setSearch("");
-  };
+  const handleNavigate = (v: AdminView) => { setView(v); setSearch(""); };
+  const handleExit     = () => navigate("/");
+  const handleLogout   = () => { logout(); navigate("/"); };
 
-  const handleExit = () => navigate("/");
+  const openNewPost  = () => { setEditingPost(null); setEditorOpen(true); };
+  const openEditPost = (post: PostResponse) => { setEditingPost(post); setEditorOpen(true); };
+  const closeEditor  = () => { setEditorOpen(false); setEditingPost(null); };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
-  // Post editor takes full screen
   if (editorOpen) {
-    return <PostEditor onBack={() => { setEditorOpen(false); setEditSlug(""); }} initialSlug={editSlug} />;
+    return <PostEditor onBack={closeEditor} post={editingPost} />;
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        overflow: "hidden",
-        background: "#080a1a",
-        color: "#fff",
-        fontFamily: "'Inter', sans-serif",
-      }}
-    >
-      <AdminSidebar
-        activeView={view}
-        onNavigate={handleNavigate}
-        collapsed={sidebarCollapsed}
-      />
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#080a1a", color: "#fff", fontFamily: "'Inter', sans-serif" }}>
+      <AdminSidebar activeView={view} onNavigate={handleNavigate} collapsed={sidebarCollapsed} />
 
-      {/* Main column */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <AdminTopBar
           view={view}
           search={search}
           onSearch={setSearch}
-          onNewPost={() => setEditorOpen(true)}
+          onNewPost={openNewPost}
           collapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed((c) => !c)}
         />
 
-        {/* Scrollable content */}
         <main style={{ flex: 1, overflowY: "auto", padding: "28px 28px 48px" }}>
           {/* Breadcrumb + exit */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "24px" }}>
@@ -91,9 +72,8 @@ export function AdminDashboard() {
             </button>
           </div>
 
-          {/* View renderer */}
           {view === "overview"  && <OverviewView />}
-          {view === "posts"     && <PostsView search={search} onEditPost={(slug) => { setEditSlug(slug); setEditorOpen(true); }} /> }
+          {view === "posts"     && <PostsView search={search} onEditPost={openEditPost} onNewPost={openNewPost} />}
           {view === "profile"   && <AdminProfileView />}
           {view === "comments"  && <CommentsView />}
           {view === "tags"      && <PlaceholderView label="Tags" />}
