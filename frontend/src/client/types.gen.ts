@@ -956,33 +956,57 @@ export type PostsCreatePostResponses = {
 
 export type PostsCreatePostResponse = PostsCreatePostResponses[keyof PostsCreatePostResponses];
 
-export type PostsReadPostData = {
+export type PostsReadAllPostsData = {
     body?: never;
-    path: {
-        /**
-         * Slug
-         * The slug of the post to retrieve
-         */
-        slug: string;
-    };
+    path?: never;
     query?: {
         /**
          * Limit
          */
         limit?: number;
         /**
-         * Tag
-         */
-        tag?: string | null;
-        /**
          * Search
          */
         search?: string | null;
+        /**
+         * Status
+         */
+        status?: PostStatus | null;
         /**
          * Page
          */
         page?: number;
     };
+    url: '/api/v1/posts/admin/all';
+};
+
+export type PostsReadAllPostsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PostsReadAllPostsError = PostsReadAllPostsErrors[keyof PostsReadAllPostsErrors];
+
+export type PostsReadAllPostsResponses = {
+    /**
+     * Successful Response
+     */
+    200: PaginatedPostsResponse;
+};
+
+export type PostsReadAllPostsResponse = PostsReadAllPostsResponses[keyof PostsReadAllPostsResponses];
+
+export type PostsReadPostData = {
+    body?: never;
+    path: {
+        /**
+         * Slug
+         */
+        slug: string;
+    };
+    query?: never;
     url: '/api/v1/posts/{slug}';
 };
 
