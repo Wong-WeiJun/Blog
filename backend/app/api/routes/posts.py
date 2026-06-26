@@ -46,7 +46,40 @@ def read_posts(
         )
 
     total = session.exec(select(func.count()).select_from(query.subquery())).one()
+    posts = session.exec(query.offset(offset).limit(limit)).all()
 
+    return PaginatedPostsResponse(
+        posts=[PostResponse.model_validate(post) for post in posts],
+        total=total,
+        page=page,
+        limit=limit,
+    )
+
+
+@router.get(
+    "/admin/all",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=PaginatedPostsResponse,
+)
+def read_all_posts(
+    session: SessionDep,
+    limit: Annotated[int, Query(ge=1, le=100)] = settings.DEFAULT_PAGE_SIZE,
+    search: str | None = None,
+    status: PostStatus | None = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+) -> PaginatedPostsResponse:
+    offset = (page - 1) * limit
+
+    query = select(Post)
+    if status:
+        query = query.where(Post.status == status)
+    if search:
+        query = query.where(
+            Post.title.ilike(f"%{search}%") | Post.excerpt.ilike(f"%{search}%")  # type: ignore[attr-defined]
+        )
+
+    query = query.order_by(Post.created_at.desc())  # type: ignore[attr-defined]
+    total = session.exec(select(func.count()).select_from(query.subquery())).one()
     posts = session.exec(query.offset(offset).limit(limit)).all()
 
     return PaginatedPostsResponse(
