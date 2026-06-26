@@ -1,8 +1,81 @@
 import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getPostsByTag } from "../../data/posts";
-import { PostCard, SkeletonCard } from "./PostGrid";
+import type { Post } from "../../data/posts";
+import { SkeletonCard } from "./PostGrid";
+
+function ArchivePostCard({ post }: { post: Post }) {
+  return (
+    <Link
+      to={`/blog/${post.slug}`}
+      style={{
+        background: "transparent",
+        border: "1px solid #2d2720",
+        borderRadius: "12px",
+        padding: "24px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+        textDecoration: "none",
+        transition: "background 0.2s, border-color 0.2s, transform 0.15s",
+      }}
+      className="post-card-hover"
+    >
+      <div className="flex items-center justify-between">
+        <span style={{
+          fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", fontWeight: 600,
+          color: post.tagColor,
+          background: `${post.tagColor}18`,
+          border: `1px solid ${post.tagColor}38`,
+          borderRadius: "6px", padding: "3px 9px",
+        }}>
+          {post.tag}
+        </span>
+        <span style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: "0.68rem", color: "rgba(255,255,255,0.3)",
+        }}>
+          {post.readTime || "—"}
+        </span>
+      </div>
+
+      <h3 style={{
+        fontFamily: "'Fraunces', serif", fontWeight: 700,
+        fontSize: "1.0625rem", lineHeight: 1.35,
+        color: "#fff", letterSpacing: "-0.01em",
+      }}>
+        {post.title}
+      </h3>
+
+      <p style={{
+        fontFamily: "'Inter', sans-serif", fontSize: "0.875rem",
+        lineHeight: 1.65, color: "rgba(255,255,255,0.5)", flexGrow: 1,
+      }}>
+        {post.excerpt || "Read more"}
+      </p>
+
+      <div
+        className="flex items-center justify-between mt-1"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "12px" }}
+      >
+        <span style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: "0.68rem", color: "rgba(255,255,255,0.3)",
+        }}>
+          {post.date}
+        </span>
+        <span style={{
+          fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem",
+          fontWeight: 500, color: "#f0a86b",
+          display: "flex", alignItems: "center", gap: "4px",
+        }}>
+          Read <ArrowRight size={13} />
+        </span>
+      </div>
+    </Link>
+  );
+}
 
 export function TagArchivePage() {
   const { tag } = useParams<{ tag: string }>();
@@ -163,7 +236,7 @@ export function TagArchivePage() {
         {/* Post grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {visible.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <ArchivePostCard key={post.id} post={post} />
           ))}
           {loading &&
             [1, 2].map((i) => <SkeletonCard key={`sk-${i}`} />)}
