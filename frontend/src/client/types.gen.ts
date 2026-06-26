@@ -961,10 +961,28 @@ export type PostsReadPostData = {
     path: {
         /**
          * Slug
+         * The slug of the post to retrieve
          */
         slug: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Tag
+         */
+        tag?: string | null;
+        /**
+         * Search
+         */
+        search?: string | null;
+        /**
+         * Page
+         */
+        page?: number;
+    };
     url: '/api/v1/posts/{slug}';
 };
 

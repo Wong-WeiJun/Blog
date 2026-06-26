@@ -435,3 +435,20 @@ export const privateCreateUser = <ThrowOnError extends boolean = false>(options:
         }
     });
 };
+/**
+ * Read All Posts (Admin)
+ * Returns all posts regardless of status. Requires superuser.
+ */
+export const postsReadAllPosts = <ThrowOnError extends boolean = false>(options?: Options<{
+  body?: never;
+  path?: never;
+  query?: { limit?: number; search?: string | null; status?: string | null; page?: number };
+  url: '/api/v1/posts/admin/all';
+}, ThrowOnError>) => {
+  return (options?.client ?? _heyApiClient).get<{ posts: import('./types.gen').PostResponse[]; total: number; page: number; limit: number }, unknown, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/admin/all',
+    ...options,
+  });
+};
