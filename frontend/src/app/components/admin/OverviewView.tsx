@@ -110,8 +110,9 @@ export function OverviewView() {
     queryFn: () => postsReadAllPosts({ query: { page: 1, limit: 100 } }),
   });
 
-  const posts = data?.data?.posts ?? [];
-  const total = data?.data?.total ?? 0;
+  const paginatedData = data?.data as { posts: import("@/client/types.gen").PostResponse[]; total: number } | undefined;
+  const posts = paginatedData?.posts ?? [];
+  const total = paginatedData?.total ?? 0;
   const published = posts.filter((p) => p.status === "published");
   const totalViews = posts.reduce((s, p) => s + (p.view_count ?? 0), 0);
   const topPosts = [...published].sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0)).slice(0, 5);
