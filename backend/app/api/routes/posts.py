@@ -1,9 +1,8 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlmodel import Session
-from sqlmodel import func, select
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlmodel import Session, func, select
 
 from app.api.deps import (
     CurrentUser,
