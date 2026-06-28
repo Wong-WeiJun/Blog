@@ -115,5 +115,20 @@ class Settings(BaseSettings):
 
     DEFAULT_PAGE_SIZE: int = 10
 
+    # S3 / cover image uploads
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_S3_REGION: str = "us-east-1"
+    AWS_S3_BUCKET: str | None = None
+    # Optional: CloudFront or custom domain. If omitted the standard S3 URL is used.
+    AWS_S3_CDN_URL: str | None = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def s3_enabled(self) -> bool:
+        return bool(
+            self.AWS_ACCESS_KEY_ID and self.AWS_SECRET_ACCESS_KEY and self.AWS_S3_BUCKET
+        )
+
 
 settings = Settings()  # type: ignore
