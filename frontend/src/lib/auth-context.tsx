@@ -13,6 +13,8 @@ export interface AuthUser {
   role: UserRole;
   name: string;
   email: string;
+  avatarUrl: string | null;
+  id: string;
 }
 
 interface AuthContextValue {
@@ -21,6 +23,7 @@ interface AuthContextValue {
   logout: () => void;
   register: (name: string, email: string, password: string) => void;
   recoverPassword: (email: string) => void;
+  refreshUser: () => void;
   isLoggingIn: boolean;
   isRegistering: boolean;
   isRecoveringPassword: boolean;
@@ -34,6 +37,8 @@ function adaptUser(backendUser: UserPublic | null): AuthUser | null {
     role: backendUser.is_superuser ? "admin" : "user",
     name: backendUser.full_name || backendUser.email.split("@")[0] || "User",
     email: backendUser.email,
+    avatarUrl: backendUser.avatar_url ?? null,
+    id: backendUser.id,
   };
 }
 
@@ -42,10 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     (email: string, password: string) => {
-      const data: AccessToken = {
-        username: email,
-        password,
-      };
+      const data: AccessToken = { username: email, password };
       auth.loginMutation.mutate(data);
     },
     [auth.loginMutation],
@@ -53,26 +55,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(
     (name: string, email: string, password: string) => {
-      const data: UserRegister = {
-        full_name: name,
-        email,
-        password,
-      };
+      const data: UserRegister = { full_name: name, email, password };
       auth.signUpMutation.mutate(data);
     },
     [auth.signUpMutation],
   );
 
   const recoverPassword = useCallback(
-    (email: string) => {
-      auth.recoverPasswordMutation.mutate(email);
-    },
+    (email: string) => { auth.recoverPasswordMutation.mutate(email); },
     [auth.recoverPasswordMutation],
   );
 
-  const logout = useCallback(() => {
-    auth.logout();
-  }, [auth.logout]);
+  const logout = useCallback(() => { auth.logout(); }, [auth.logout]);
+
+  // Invalidates the currentUser query so any component using useAuth()
+  // automatically re-fetches after an avatar or profile update.
+  const refreshUser = useCallback(() => {
+    auth.refreshUser();
+  }, [auth.refreshUser]);
 
   const user = adaptUser(auth.user);
 
@@ -84,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         register,
         recoverPassword,
+        refreshUser,
         isLoggingIn: auth.loginMutation.isPending,
         isRegistering: auth.signUpMutation.isPending,
         isRecoveringPassword: auth.recoverPasswordMutation.isPending,
@@ -96,8 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuthContext() {
   const ctx = useContext(AuthContext);
-  if (!ctx)
-    throw new Error("useAuthContext must be used inside an AuthProvider");
+  if (!ctx) throw new Error("useAuthContext must be used inside an AuthProvider");
   return ctx;
 }
 
