@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlmodel import col, func, select
 
 from app import crud
@@ -24,6 +25,11 @@ from app.models import (
     UserUpdateMe,
 )
 from app.utils import generate_new_account_email, send_email
+
+
+class AvatarUpdate(BaseModel):
+    avatar_url: str | None
+
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -118,6 +124,21 @@ def update_password_me(
     session.add(current_user)
     session.commit()
     return Message(message="Password updated successfully")
+
+
+@router.patch("/me/avatar", response_model=UserPublic)
+def update_avatar_me(
+    *, session: SessionDep, body: AvatarUpdate, current_user: CurrentUser
+) -> Any:
+    """
+    Save the S3 avatar URL returned after a successful presigned upload.
+    The actual file upload happens client-side directly to S3.
+    """
+    current_user.avatar_url = body.avatar_url
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    return current_user
 
 
 @router.get("/me", response_model=UserPublic)
