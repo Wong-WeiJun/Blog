@@ -33,6 +33,7 @@ def read_posts(
     search: str | None = None,
     page: Annotated[int, Query(ge=1)] = 1,
 ) -> PaginatedPostsResponse:
+    """Public endpoint — returns published posts only."""
     offset = (page - 1) * limit
 
     query = select(Post).where(Post.status == PostStatus.published)
@@ -67,6 +68,7 @@ def read_all_posts(
     status: PostStatus | None = None,
     page: Annotated[int, Query(ge=1)] = 1,
 ) -> PaginatedPostsResponse:
+    """Admin endpoint — returns all posts regardless of status."""
     offset = (page - 1) * limit
 
     query = select(Post)
