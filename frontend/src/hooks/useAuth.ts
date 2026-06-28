@@ -84,11 +84,16 @@ const useAuth = () => {
     onError: handleError.bind(showErrorToast),
   });
 
+  const refreshUser = () => {
+    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+  };
+
   return {
     signUpMutation,
     loginMutation,
     recoverPasswordMutation,
     logout,
+    refreshUser,
     user: user ?? null,
     isLoading: false,
   };
