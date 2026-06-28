@@ -3,7 +3,7 @@ import { useState, useRef, useCallback } from "react";
 import {
   ArrowLeft, Bold, Italic, Code, Heading2, Heading3, Link2,
   ImagePlus, Quote, Save, Send, Eye, X, Upload, Globe,
-  Calendar, Loader2, Check,
+  Calendar, Loader2, Check, AlertCircle,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { postsCreatePost, postsUpdatePost, postsPublishPost } from "@/client/sdk.gen";
@@ -91,50 +91,207 @@ function Toolbar({ textareaRef, setValue }: { textareaRef: RefObject<HTMLTextAre
   );
 }
 
-/* ─────────────────────────── cover upload ───────────────────────── */
+/* ─────────────────────────── cover upload (S3) ───────────────────────── */
 
-function CoverUpload({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
-  const [dragging, setDragging] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const handleFile = (file: File) => {
-    if (!file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = (e) => onChange(e.target?.result as string);
-    reader.readAsDataURL(file);
+type UploadStatus = "idle" | "requesting" | "uploading" | "done" | "error";
+
+/**
+ * Uploads a cover image directly to S3 via a presigned POST URL.
+ *
+ * Flow:
+ *   1. Ask backend for a presigned POST URL (POST /api/v1/uploads/cover-image-url)
+ *   2. PUT the file straight to S3 using the presigned fields
+ *   3. Call onChange(publicUrl) so the editor can include it in the post body
+ */
+async function uploadToS3(
+  file: File,
+  onProgress: (pct: number) => void,
+): Promise<string> {
+  // Step 1 — get presigned URL from backend
+  const token = localStorage.getItem("access_token");
+  const presignRes = await fetch("/api/v1/uploads/cover-image-url", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ filename: file.name, content_type: file.type }),
+  });
+  if (!presignRes.ok) {
+    const err = await presignRes.json().catch(() => ({}));
+    throw new Error((err as { detail?: string }).detail ?? "Failed to get upload URL");
+  }
+  const { url, fields, public_url } = await presignRes.json() as {
+    url: string; fields: Record<string, string>; public_url: string;
   };
+
+  // Step 2 — POST directly to S3
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    // fields must come before the file (S3 requirement)
+    Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
+    fd.append("file", file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      // S3 presigned POST returns 204 No Content on success
+      if (xhr.status === 204 || xhr.status === 200) resolve(public_url);
+      else reject(new Error(`S3 upload failed: ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error("Network error during S3 upload"));
+    xhr.open("POST", url);
+    xhr.send(fd);
+  });
+}
+
+function CoverUpload({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (v: string | null) => void;
+}) {
+  const [dragging, setDragging]   = useState(false);
+  const [status, setStatus]       = useState<UploadStatus>("idle");
+  const [progress, setProgress]   = useState(0);
+  const [errorMsg, setErrorMsg]   = useState<string | null>(null);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setErrorMsg("Please select an image file (JPEG, PNG, WebP, etc.)");
+      setStatus("error");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMsg("Image must be under 10 MB.");
+      setStatus("error");
+      return;
+    }
+
+    // Show local preview immediately while uploading
+    const objectUrl = URL.createObjectURL(file);
+    setLocalPreview(objectUrl);
+    setStatus("requesting");
+    setProgress(0);
+    setErrorMsg(null);
+
+    try {
+      setStatus("uploading");
+      const publicUrl = await uploadToS3(file, setProgress);
+      onChange(publicUrl);
+      setStatus("done");
+      URL.revokeObjectURL(objectUrl);
+      setLocalPreview(null);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Upload failed");
+      setStatus("error");
+      URL.revokeObjectURL(objectUrl);
+      setLocalPreview(null);
+    }
+  }, [onChange]);
+
   const onDrop = useCallback((e: DragEvent) => {
     e.preventDefault(); setDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
-  }, []);
+  }, [handleFile]);
+
+  const handleRemove = () => {
+    onChange(null);
+    setStatus("idle");
+    setProgress(0);
+    setErrorMsg(null);
+    setLocalPreview(null);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const displaySrc = value ?? localPreview;
+  const isUploading = status === "requesting" || status === "uploading";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>Cover Image</p>
-      {value ? (
+
+      {displaySrc ? (
         <div style={{ position: "relative", borderRadius: "9px", overflow: "hidden", aspectRatio: "16/9" }}>
-          <img src={value} alt="Cover" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          <button onClick={() => onChange(null)} style={{ position: "absolute", top: "8px", right: "8px", width: "26px", height: "26px", borderRadius: "50%", background: "rgba(0,0,0,0.65)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
-            <X size={13} />
-          </button>
+          <img src={displaySrc} alt="Cover preview" style={{ width: "100%", height: "100%", objectFit: "cover", filter: isUploading ? "brightness(0.5)" : "none", transition: "filter 0.2s" }} />
+
+          {/* Upload progress overlay */}
+          {isUploading && (
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+              <Loader2 size={22} color="#fff" style={{ animation: "spin 0.8s linear infinite" }} />
+              <div style={{ width: "60%", height: "4px", background: "rgba(255,255,255,0.2)", borderRadius: "999px", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${progress}%`, background: "#5046e5", borderRadius: "999px", transition: "width 0.2s" }} />
+              </div>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: "rgba(255,255,255,0.7)" }}>{progress}%</span>
+            </div>
+          )}
+
+          {/* Done badge */}
+          {status === "done" && (
+            <div style={{ position: "absolute", top: "8px", left: "8px", background: "rgba(74,222,128,0.9)", borderRadius: "6px", padding: "3px 8px", display: "flex", alignItems: "center", gap: "4px" }}>
+              <Check size={11} color="#fff" />
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.68rem", fontWeight: 600, color: "#fff" }}>Uploaded</span>
+            </div>
+          )}
+
+          {/* Remove button */}
+          {!isUploading && (
+            <button onClick={handleRemove} title="Remove cover image" style={{ position: "absolute", top: "8px", right: "8px", width: "26px", height: "26px", borderRadius: "50%", background: "rgba(0,0,0,0.65)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", transition: "background 0.15s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(220,38,38,0.8)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.65)")}
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
       ) : (
         <div
-          onClick={() => inputRef.current?.click()}
+          onClick={() => !isUploading && inputRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
-          style={{ border: `2px dashed ${dragging ? "#5046e5" : "rgba(255,255,255,0.1)"}`, borderRadius: "9px", padding: "24px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", cursor: "pointer", background: dragging ? "rgba(80,70,229,0.06)" : "transparent", transition: "all 0.15s", textAlign: "center" }}
+          style={{ border: `2px dashed ${dragging ? "#5046e5" : "rgba(255,255,255,0.1)"}`, borderRadius: "9px", padding: "28px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", cursor: isUploading ? "wait" : "pointer", background: dragging ? "rgba(80,70,229,0.06)" : "transparent", transition: "all 0.15s", textAlign: "center" }}
         >
-          <Upload size={20} color="rgba(255,255,255,0.25)" />
+          {isUploading ? (
+            <Loader2 size={22} color="rgba(165,180,252,0.7)" style={{ animation: "spin 0.8s linear infinite" }} />
+          ) : (
+            <Upload size={22} color="rgba(255,255,255,0.25)" />
+          )}
           <div>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "rgba(255,255,255,0.5)", margin: "0 0 2px" }}>
-              Drag & drop or <span style={{ color: "#a5b4fc" }}>browse</span>
+              {isUploading ? "Uploading to S3…" : (<>Drag & drop or <span style={{ color: "#a5b4fc" }}>browse</span></>)}
             </p>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", color: "rgba(255,255,255,0.25)", margin: 0 }}>PNG, JPG, WebP · 16:9 recommended</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", color: "rgba(255,255,255,0.25)", margin: 0 }}>
+              {isUploading ? `${progress}%` : "PNG, JPG, WebP · max 10 MB · 16:9 recommended"}
+            </p>
           </div>
         </div>
       )}
-      <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+
+      {/* Error message */}
+      {status === "error" && errorMsg && (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "7px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "7px", padding: "9px 12px" }}>
+          <AlertCircle size={13} color="#f87171" style={{ marginTop: "1px", flexShrink: 0 }} />
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.78rem", color: "#f87171", margin: 0 }}>{errorMsg}</p>
+        </div>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+        }}
+      />
     </div>
   );
 }
@@ -349,7 +506,7 @@ export function PostEditor({ onBack, post }: Props) {
   const [status, setStatus]     = useState<PostStatus>(post?.status ?? "draft");
   const [featured, setFeatured] = useState(post?.featured ?? false);
   const [tags, setTags]         = useState<string[]>(post?.tags?.map((t) => t.name) ?? []);
-  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverImage, setCoverImage] = useState<string | null>(post?.cover_image_url ?? null);
   const [date, setDate]         = useState<string>(() => {
     if (post?.published_at) return post.published_at.slice(0, 10);
     return new Date().toISOString().slice(0, 10);
@@ -367,7 +524,7 @@ export function PostEditor({ onBack, post }: Props) {
   const createMutation = useMutation({
     mutationFn: () =>
       postsCreatePost({
-        body: { title, slug, content, excerpt, status, featured, tag_names: tags },
+        body: { title, slug, content, excerpt, status, featured, tag_names: tags, cover_image_url: coverImage },
       }),
     onSuccess: () => {
       showSuccessToast("Post created.");
@@ -382,7 +539,7 @@ export function PostEditor({ onBack, post }: Props) {
     mutationFn: () =>
       postsUpdatePost({
         path: { post_id: post!.id },
-        body: { title, slug, content, excerpt, status, featured, tag_names: tags },
+        body: { title, slug, content, excerpt, status, featured, tag_names: tags, cover_image_url: coverImage },
       }),
     onSuccess: () => {
       showSuccessToast("Post saved.");
@@ -397,10 +554,10 @@ export function PostEditor({ onBack, post }: Props) {
     mutationFn: async () => {
       // Save first, then publish
       if (isEditing) {
-        await postsUpdatePost({ path: { post_id: post!.id }, body: { title, slug, content, excerpt, featured, tag_names: tags } });
+        await postsUpdatePost({ path: { post_id: post!.id }, body: { title, slug, content, excerpt, featured, tag_names: tags, cover_image_url: coverImage } });
         return postsPublishPost({ path: { post_id: post!.id } });
       } else {
-        const created = await postsCreatePost({ body: { title, slug, content, excerpt, status: "draft", featured, tag_names: tags } });
+        const created = await postsCreatePost({ body: { title, slug, content, excerpt, status: "draft", featured, tag_names: tags, cover_image_url: coverImage } });
         return postsPublishPost({ path: { post_id: created.data!.id } });
       }
     },
