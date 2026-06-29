@@ -22,6 +22,7 @@ function UserMenu() {
   if (!user) return null;
 
   const initials = user.name.slice(0, 2).toUpperCase();
+  const firstLetter = user.name[0]?.toUpperCase() ?? "U";
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
@@ -32,8 +33,12 @@ function UserMenu() {
         onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
       >
         {/* Avatar */}
-        <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: user.role === "admin" ? "linear-gradient(135deg, rgba(80,70,229,0.6), rgba(129,140,248,0.5))" : "linear-gradient(135deg, rgba(110,231,183,0.4), rgba(52,211,153,0.3))", border: `1.5px solid ${user.role === "admin" ? "rgba(80,70,229,0.6)" : "rgba(110,231,183,0.5)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.6875rem", fontWeight: 700, color: user.role === "admin" ? "#a5b4fc" : "#6ee7b7" }}>{initials}</span>
+        <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: user.avatarUrl ? "transparent" : (user.role === "admin" ? "linear-gradient(135deg, rgba(80,70,229,0.6), rgba(129,140,248,0.5))" : "linear-gradient(135deg, rgba(110,231,183,0.4), rgba(52,211,153,0.3))"), border: `1.5px solid ${user.role === "admin" ? "rgba(80,70,229,0.6)" : "rgba(110,231,183,0.5)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.6875rem", fontWeight: 700, color: user.role === "admin" ? "#a5b4fc" : "#6ee7b7" }}>{initials}</span>
+          )}
         </div>
         <div style={{ textAlign: "left" }}>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", margin: 0, lineHeight: 1.2 }}>{user.name}</p>
@@ -45,9 +50,18 @@ function UserMenu() {
       {open && (
         <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: "210px", background: "#0f1124", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", overflow: "hidden", boxShadow: "0 16px 48px rgba(0,0,0,0.6)", zIndex: 200 }}>
           {/* User info header */}
-          <div style={{ padding: "14px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 600, color: "#fff", margin: "0 0 2px" }}>{user.name}</p>
-            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>{user.email}</p>
+          <div style={{ padding: "14px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: user.avatarUrl ? "transparent" : (user.role === "admin" ? "linear-gradient(135deg, rgba(80,70,229,0.6), rgba(129,140,248,0.5))" : "linear-gradient(135deg, rgba(110,231,183,0.4), rgba(52,211,153,0.3))"), border: `1.5px solid ${user.role === "admin" ? "rgba(80,70,229,0.6)" : "rgba(110,231,183,0.5)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span style={{ fontFamily: "'Fraunces', serif", fontSize: "0.875rem", fontWeight: 700, color: user.role === "admin" ? "#a5b4fc" : "#6ee7b7" }}>{firstLetter}</span>
+              )}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 600, color: "#fff", margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</p>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: "rgba(255,255,255,0.35)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
+            </div>
           </div>
 
           {/* Menu items */}
