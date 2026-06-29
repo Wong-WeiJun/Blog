@@ -93,47 +93,8 @@ services:
       - "1080:1080"
       - "1025:1025"
 
-  frontend:
-    restart: "no"
-    # NOTE: The -debian suffix is required because the slim/alpine variant
-    # of the oven/bun image ships without the bun binary in PATH.
-    image: oven/bun:1.2.23-debian
-    ports:
-      - "5173:5173"
-    working_dir: /app/frontend
-    volumes:
-      - ./frontend:/app/frontend:rw
-      # Anonymous volume for node_modules — container manages its own deps
-      - /app/frontend/node_modules
-      # Also isolate bun's global cache to avoid host/ architecture mismatches
-      - /app/frontend/.bun
-    environment:
-      - VITE_API_URL=http://localhost:8000
-      - NODE_ENV=development
-    command:
-      - sh
-      - -c
-      - |
-        if [ -z "$(ls -A node_modules 2>/dev/null)" ]; then
-          echo "Installing frontend dependencies..."
-          bun install
-        fi
-        bun run dev -- --host 0.0.0.0
-    networks:
-      - traefik-public
-      - default
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=traefik-public
-      - traefik.constraint-label=traefik-public
-      - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=5173
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.entrypoints=http
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=https
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=le
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.middlewares=https-redirect
+  # Frontend runs natively via "make dev-frontend" (bun run dev).
+  # Removed from Docker to avoid conflicting with the production nginx build.
 
 networks:
   traefik-public:
