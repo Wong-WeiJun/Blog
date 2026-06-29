@@ -1,14 +1,15 @@
 import type { ReactNode, CSSProperties, ChangeEvent } from "react";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router";
 import {
   User, Shield, AlertTriangle, Camera, Eye, EyeOff,
   Monitor, Smartphone, Globe, LogOut, ArrowLeft, Loader2,
-  CheckCircle2, X,
+  CheckCircle2, X, Check,
 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
 import { type UserUpdateMe, type UpdatePassword, usersUpdateUserMe, usersUpdatePasswordMe } from "@/client";
+import { usersUpdateAvatarMe } from "@/client/sdk.gen";
 import useCustomToast from "../../../hooks/useCustomToast";
 
 /* ─── types ─── */
@@ -143,87 +144,249 @@ function SectionDesc({ children }: { children: ReactNode }) {
 
 /* ─── Avatar upload ─── */
 
-function AvatarUpload() {
-  const [preview, setPreview] = useState<string | null>(null);
+type AvatarUploadStatus = "idle" | "requesting" | "uploading" | "saving" | "done" | "error";
+
+async function uploadAvatarToS3(
+  file: File,
+  onProgress: (pct: number) => void,
+): Promise<string> {
+  const token = localStorage.getItem("access_token");
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch("/api/v1/uploads/avatar-url", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ filename: file.name, content_type: file.type }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { detail?: string }).detail ?? "Failed to get upload URL");
+  }
+  const { url, fields, public_url } = await res.json() as {
+    url: string; fields: Record<string, string>; public_url: string;
+  };
+
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
+    fd.append("file", file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status === 204 || xhr.status === 200) resolve(public_url);
+      else reject(new Error(`S3 upload failed: ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.open("POST", url);
+    xhr.send(fd);
+  });
+}
+
+function AvatarUpload({
+  currentUrl,
+  name,
+  onSaved,
+}: {
+  currentUrl: string | null;
+  name: string;
+  onSaved: (url: string | null) => void;
+}) {
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const queryClient = useQueryClient();
+
+  const [uploadStatus, setUploadStatus] = useState<AvatarUploadStatus>("idle");
+  const [progress, setProgress] = useState(0);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hover, setHover] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
+  const saveMutation = useMutation({
+    mutationFn: async (avatarUrl: string | null) => {
+      const res = await usersUpdateAvatarMe({ body: { avatar_url: avatarUrl } });
+      if (res.error) throw res.error;
+      return res;
+    },
+    onSuccess: (res) => {
+      const saved = (res.data as any)?.avatar_url ?? null;
+      onSaved(saved);
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      setUploadStatus("done");
+      showSuccessToast("Profile picture updated.");
+    },
+    onError: () => {
+      setErrorMsg("Saved to S3 but failed to update your profile. Try again.");
+      setUploadStatus("error");
+      showErrorToast("Failed to save avatar URL.");
+    },
+  });
+
+  const handleFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setErrorMsg("Please select an image file.");
+      setUploadStatus("error");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg("Image must be under 5 MB.");
+      setUploadStatus("error");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setLocalPreview(objectUrl);
+    setErrorMsg(null);
+    setProgress(0);
+    setUploadStatus("requesting");
+
+    try {
+      setUploadStatus("uploading");
+      const publicUrl = await uploadAvatarToS3(file, setProgress);
+      URL.revokeObjectURL(objectUrl);
+      setLocalPreview(null);
+      setUploadStatus("saving");
+      saveMutation.mutate(publicUrl);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Upload failed");
+      setUploadStatus("error");
+      URL.revokeObjectURL(objectUrl);
+      setLocalPreview(null);
+    }
+  }, [saveMutation]);
+
+  const handleRemove = () => {
+    saveMutation.mutate(null);
+    setUploadStatus("saving");
+    setLocalPreview(null);
+    setErrorMsg(null);
+    if (inputRef.current) inputRef.current.value = "";
   };
 
-  const firstLetter = "W";
+  const displaySrc = localPreview ?? currentUrl;
+  const firstLetter = name[0]?.toUpperCase() ?? "U";
+  const isUploading = uploadStatus === "requesting" || uploadStatus === "uploading" || uploadStatus === "saving";
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
       <div
-        style={{ position: "relative", cursor: "pointer", flexShrink: 0 }}
+        style={{ position: "relative", cursor: isUploading ? "wait" : "pointer", flexShrink: 0 }}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => !isUploading && inputRef.current?.click()}
       >
         {/* Avatar circle */}
         <div style={{
           width: "88px", height: "88px", borderRadius: "50%",
-          background: preview ? "transparent" : "linear-gradient(135deg, rgba(80,70,229,0.5), rgba(129,140,248,0.35))",
-          border: hover ? "2px solid #5046e5" : "2px solid rgba(80,70,229,0.4)",
+          background: displaySrc ? "transparent" : "linear-gradient(135deg, rgba(80,70,229,0.5), rgba(129,140,248,0.35))",
+          border: hover && !isUploading ? "2px solid #5046e5" : "2px solid rgba(80,70,229,0.4)",
           overflow: "hidden", transition: "border-color 0.2s",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          {preview
-            ? <img src={preview} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <span style={{ fontFamily: "'Fraunces', serif", fontSize: "2rem", fontWeight: 700, color: "#a5b4fc" }}>{firstLetter}</span>
-          }
+          {displaySrc ? (
+            <img src={displaySrc} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover", filter: isUploading ? "brightness(0.45)" : "none", transition: "filter 0.2s" }} />
+          ) : (
+            <span style={{ fontFamily: "'Fraunces', serif", fontSize: "2rem", fontWeight: 700, color: "#a5b4fc" }}>{firstLetter}</span>
+          )}
         </div>
 
         {/* Camera overlay */}
-        <div style={{
-          position: "absolute", inset: 0, borderRadius: "50%",
-          background: "rgba(0,0,0,0.55)", display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center", gap: "3px",
-          opacity: hover ? 1 : 0, transition: "opacity 0.2s",
-        }}>
-          <Camera size={18} color="#fff" />
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.6rem", fontWeight: 600, color: "#fff", letterSpacing: "0.04em" }}>EDIT</span>
-        </div>
+        {!isUploading && (
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: "50%",
+            background: "rgba(0,0,0,0.55)", display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: "3px",
+            opacity: hover ? 1 : 0, transition: "opacity 0.2s",
+          }}>
+            <Camera size={18} color="#fff" />
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.6rem", fontWeight: 600, color: "#fff", letterSpacing: "0.04em" }}>EDIT</span>
+          </div>
+        )}
+
+        {/* Upload spinner overlay */}
+        {isUploading && (
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+            <Loader2 size={18} color="#fff" style={{ animation: "spin 0.8s linear infinite" }} />
+            {uploadStatus === "uploading" && (
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.55rem", color: "rgba(255,255,255,0.8)" }}>{progress}%</span>
+            )}
+          </div>
+        )}
 
         {/* Green dot — online indicator */}
-        <div style={{
-          position: "absolute", bottom: "4px", right: "4px",
-          width: "14px", height: "14px", borderRadius: "50%",
-          background: "#4ade80", border: "2px solid #0a0c1e",
-        }} />
+        {!isUploading && (
+          <div style={{
+            position: "absolute", bottom: "4px", right: "4px",
+            width: "14px", height: "14px", borderRadius: "50%",
+            background: "#4ade80", border: "2px solid #0a0c1e",
+          }} />
+        )}
+
+        {/* Done tick */}
+        {uploadStatus === "done" && !isUploading && (
+          <div style={{ position: "absolute", bottom: "2px", right: "2px", width: "20px", height: "20px", borderRadius: "50%", background: "#4ade80", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #0a0c1e" }}>
+            <Check size={11} color="#fff" strokeWidth={3} />
+          </div>
+        )}
       </div>
 
-      <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+        style={{ display: "none" }}
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+      />
 
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500, color: "#fff", margin: 0 }}>Profile photo</p>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", margin: 0 }}>JPG, PNG or GIF · Max 2MB</p>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", margin: 0 }}>JPG, PNG, WebP · Max 5 MB</p>
+
+        {/* Status label */}
+        {uploadStatus === "saving" && (
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "#a5b4fc", margin: 0, display: "flex", alignItems: "center", gap: "5px" }}>
+            <Loader2 size={11} style={{ animation: "spin 0.8s linear infinite" }} /> Saving…
+          </p>
+        )}
+        {uploadStatus === "done" && (
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "#4ade80", margin: 0, display: "flex", alignItems: "center", gap: "5px" }}>
+            <Check size={11} /> Saved!
+          </p>
+        )}
+
         <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
           <button
-            onClick={() => inputRef.current?.click()}
-            style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", fontWeight: 500, color: "#a5b4fc", background: "rgba(80,70,229,0.12)", border: "1px solid rgba(80,70,229,0.25)", borderRadius: "7px", padding: "5px 12px", cursor: "pointer", transition: "background 0.15s" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(80,70,229,0.22)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(80,70,229,0.12)")}
+            onClick={() => !isUploading && inputRef.current?.click()}
+            disabled={isUploading}
+            style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", fontWeight: 500, color: "#a5b4fc", background: "rgba(80,70,229,0.12)", border: "1px solid rgba(80,70,229,0.25)", borderRadius: "7px", padding: "5px 12px", cursor: isUploading ? "not-allowed" : "pointer", transition: "background 0.15s", opacity: isUploading ? 0.5 : 1 }}
+            onMouseEnter={(e) => { if (!isUploading) e.currentTarget.style.background = "rgba(80,70,229,0.22)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(80,70,229,0.12)"; }}
           >
-            Upload
+            {isUploading ? "Uploading…" : "Upload"}
           </button>
-          {preview && (
+
+          {(currentUrl || localPreview) && !isUploading && (
             <button
-              onClick={() => setPreview(null)}
+              onClick={handleRemove}
               style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", fontWeight: 500, color: "rgba(255,255,255,0.45)", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "7px", padding: "5px 12px", cursor: "pointer", transition: "all 0.15s" }}
               onMouseEnter={(e) => { e.currentTarget.style.color = "#f87171"; e.currentTarget.style.borderColor = "rgba(248,113,113,0.4)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.45)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
             >
-              Remove
+              <X size={11} /> Remove
             </button>
           )}
         </div>
+
+        {/* Error */}
+        {uploadStatus === "error" && errorMsg && (
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "6px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: "7px", padding: "8px 11px", marginTop: "2px", maxWidth: "320px" }}>
+            <AlertTriangle size={12} color="#f87171" style={{ marginTop: "1px", flexShrink: 0 }} />
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "#f87171", margin: 0 }}>{errorMsg}</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -236,6 +399,7 @@ function ProfileTab({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
   const [email, setEmail] = useState(user?.email || "");
   const [bio, setBio] = useState("");
   const [website, setWebsite] = useState("");
+  const [avatarUrl, setAvatar] = useState<string | null>(user?.avatarUrl ?? null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const { showSuccessToast, showErrorToast } = useCustomToast();
@@ -270,7 +434,11 @@ function ProfileTab({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
         <SectionTitle>Public profile</SectionTitle>
         <SectionDesc>This information will be shown on your comments and public author page.</SectionDesc>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <AvatarUpload />
+          <AvatarUpload
+            currentUrl={avatarUrl}
+            name={name || user?.name || "User"}
+            onSaved={(url) => setAvatar(url)}
+          />
           <div style={{ height: "1px", background: "rgba(255,255,255,0.07)" }} />
           <Field label="Display name" value={name} onChange={setName} placeholder="Your name" maxLength={48} />
           <Field label="Bio" value={bio} onChange={setBio} placeholder="Tell readers a bit about yourself…" rows={4} maxLength={200} />
@@ -702,8 +870,12 @@ export function AccountSettings() {
           {/* User card */}
           <div style={{ marginTop: "32px", padding: "14px", background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "10px", display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: avatarColor.bg, border: `1.5px solid ${avatarColor.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontFamily: "'Fraunces', serif", fontSize: "0.875rem", fontWeight: 700, color: avatarColor.text }}>{displayName.slice(0, 1)}</span>
+              <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: user?.avatarUrl ? "transparent" : avatarColor.bg, border: `1.5px solid ${avatarColor.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ fontFamily: "'Fraunces', serif", fontSize: "0.875rem", fontWeight: 700, color: avatarColor.text }}>{displayName.slice(0, 1)}</span>
+                )}
               </div>
               <div style={{ minWidth: 0 }}>
                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</p>
