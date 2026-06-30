@@ -101,6 +101,13 @@ class TagResponse(SQLModel):
     color: str
 
 
+class TagWithCountResponse(SQLModel):
+    id: uuid.UUID
+    name: str
+    color: str
+    post_count: int
+
+
 class PostTagLink(SQLModel, table=True):
     post_id: uuid.UUID = Field(foreign_key="post.id", primary_key=True)
     tag_id: uuid.UUID = Field(foreign_key="tag.id", primary_key=True)
