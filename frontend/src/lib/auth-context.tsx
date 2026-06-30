@@ -24,6 +24,7 @@ interface AuthContextValue {
   register: (name: string, email: string, password: string) => void;
   recoverPassword: (email: string) => void;
   refreshUser: () => void;
+  isLoading: boolean;
   isLoggingIn: boolean;
   isRegistering: boolean;
   isRecoveringPassword: boolean;
@@ -85,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         recoverPassword,
         refreshUser,
+        isLoading: auth.isLoading,
         isLoggingIn: auth.loginMutation.isPending,
         isRegistering: auth.signUpMutation.isPending,
         isRecoveringPassword: auth.recoverPasswordMutation.isPending,
