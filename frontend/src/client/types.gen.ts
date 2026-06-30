@@ -97,6 +97,20 @@ export type PaginatedPostsResponse = {
 };
 
 /**
+ * PostAuthorResponse
+ */
+export type PostAuthorResponse = {
+    /**
+     * Full Name
+     */
+    full_name?: string | null;
+    /**
+     * Avatar Url
+     */
+    avatar_url?: string | null;
+};
+
+/**
  * PostCreate
  */
 export type PostCreate = {
@@ -200,6 +214,7 @@ export type PostResponse = {
      * Read Time
      */
     read_time?: string;
+    author?: PostAuthorResponse | null;
 };
 
 /**
