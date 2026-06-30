@@ -124,6 +124,9 @@ class Post(SQLModel, table=True):
     meta_description: str | None = None
     view_count: int = 0
     author_id: uuid.UUID = Field(foreign_key="user.id")
+
+    author: "User" = Relationship()
+
     published_at: datetime | None = None
     created_at: datetime = Field(
         default_factory=get_datetime_utc, sa_type=DateTime(timezone=True)
@@ -132,6 +135,11 @@ class Post(SQLModel, table=True):
         default_factory=get_datetime_utc, sa_type=DateTime(timezone=True)
     )
     tags: list[Tag] = Relationship(link_model=PostTagLink)
+
+
+class PostAuthorResponse(SQLModel):
+    full_name: str | None = None
+    avatar_url: str | None = None
 
 
 class PostResponse(SQLModel):
@@ -149,7 +157,9 @@ class PostResponse(SQLModel):
     created_at: datetime
     tags: list[TagResponse] = []
     content: str | None = None
-    read_time: str = ""  # computed below
+    read_time: str = ""
+
+    author: PostAuthorResponse | None = None
 
     @model_validator(mode="after")
     def compute_read_time(self) -> "PostResponse":
