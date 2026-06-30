@@ -6,6 +6,7 @@ import {
   ExternalLink, UserCircle,
 } from "lucide-react";
 import { BRAND_NAME, BRAND_DOMAIN } from "../../../lib/constants";
+import { useAuth } from "../../../lib/auth-context";
 
 export type AdminView = "overview" | "posts" | "comments" | "tags" | "analytics" | "profile";
 
@@ -26,7 +27,9 @@ interface Props {
 
 export function AdminSidebar({ activeView, onNavigate, collapsed }: Props) {
   const navigate = useNavigate();
-  const firstLetter = BRAND_NAME[0]?.toUpperCase() ?? "Y";
+  const { user } = useAuth();
+  const displayName = user?.name || BRAND_NAME;
+  const firstLetter = displayName[0]?.toUpperCase() ?? "Y";
 
   return (
     <aside
@@ -160,13 +163,21 @@ export function AdminSidebar({ activeView, onNavigate, collapsed }: Props) {
 
       {/* User profile */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "14px 12px", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-        <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "linear-gradient(135deg, rgba(80,70,229,0.5), rgba(129,140,248,0.4))", border: "1.5px solid rgba(80,70,229,0.5)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <span style={{ fontFamily: "'Fraunces', serif", fontSize: "0.875rem", fontWeight: 700, color: "#a5b4fc" }}>{firstLetter}</span>
+        <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "linear-gradient(135deg, rgba(80,70,229,0.5), rgba(129,140,248,0.4))", border: "1.5px solid rgba(80,70,229,0.5)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+          {user?.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt={displayName}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <span style={{ fontFamily: "'Fraunces', serif", fontSize: "0.875rem", fontWeight: 700, color: "#a5b4fc" }}>{firstLetter}</span>
+          )}
         </div>
         {!collapsed && (
           <div style={{ overflow: "hidden" }}>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{BRAND_NAME}</p>
-            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.65rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>Blog Owner</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{displayName}</p>
+            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.65rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>{user?.role === "admin" ? "Blog Owner" : "Writer"}</p>
           </div>
         )}
       </div>
