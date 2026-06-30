@@ -116,31 +116,42 @@ export function BlogPost({ post }: { post: PostResponse }) {
       </header>
 
       {/* Cover image */}
-      <div
-        className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-12"
-        style={{ width: "100%" }}
-      >
+      {post.cover_image_url ? (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-12" style={{ width: "100%" }}>
+          <div style={{ borderRadius: "16px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.07)", position: "relative" }}>
+            <img
+              src={post.cover_image_url}
+              alt={post.title}
+              style={{ width: "100%", height: "auto", display: "block" }}
+            />
+          </div>
+        </div>
+      ) : (
         <div
-          style={{ borderRadius: "16px", overflow: "hidden", background: "linear-gradient(135deg, #0d0f24 0%, #0a1230 50%, #130d28 100%)", minHeight: "320px", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", border: "1px solid rgba(255,255,255,0.07)" }}
+          className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-12"
+          style={{ width: "100%" }}
         >
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 35% 50%, rgba(80,70,229,0.22) 0%, transparent 60%)" }} />
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 75% 30%, rgba(99,102,241,0.15) 0%, transparent 55%)" }} />
-          {/* Terminal overlay */}
-          <div style={{ position: "relative", zIndex: 1, background: "rgba(5,5,15,0.7)", border: "1px solid rgba(80,70,229,0.25)", borderRadius: "14px", padding: "22px 28px", backdropFilter: "blur(10px)", minWidth: "min(580px, 90vw)" }}>
-            <div style={{ display: "flex", gap: "6px", marginBottom: "16px" }}>
-              {["#ff5f56", "#ffbd2e", "#27c93f"].map((c) => <div key={c} style={{ width: "11px", height: "11px", borderRadius: "50%", background: c }} />)}
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.3)", marginLeft: "8px" }}>deploy.sh</span>
-            </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8125rem", lineHeight: 2, color: "rgba(255,255,255,0.7)" }}>
-              <div><span style={{ color: "#6ee7b7" }}>$ </span><span style={{ color: "rgba(165,180,252,0.8)" }}>terraform</span> apply <span style={{ color: "#fcd34d" }}>-var</span>=&quot;blue_weight=0&quot; <span style={{ color: "#fcd34d" }}>-var</span>=&quot;green_weight=100&quot;</div>
-              <div style={{ color: "rgba(255,255,255,0.35)" }}>  Plan: 1 to add, 2 to change, 0 to destroy.</div>
-              <div><span style={{ color: "#6ee7b7" }}>✔</span> aws_lb_listener_rule.weighted: Modifications complete</div>
-              <div><span style={{ color: "#6ee7b7" }}>✔</span> aws_cloudwatch_metric_alarm.p99_latency: Created</div>
-              <div style={{ marginTop: "4px" }}><span style={{ color: "#6ee7b7" }}>Apply complete!</span> <span style={{ color: "rgba(255,255,255,0.4)" }}>Resources: 1 added, 2 changed, 0 destroyed.</span></div>
+          <div
+            style={{ borderRadius: "16px", overflow: "hidden", background: "linear-gradient(135deg, #0d0f24 0%, #0a1230 50%, #130d28 100%)", minHeight: "320px", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", border: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 35% 50%, rgba(80,70,229,0.22) 0%, transparent 60%)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 75% 30%, rgba(99,102,241,0.15) 0%, transparent 55%)" }} />
+            <div style={{ position: "relative", zIndex: 1, background: "rgba(5,5,15,0.7)", border: "1px solid rgba(80,70,229,0.25)", borderRadius: "14px", padding: "22px 28px", backdropFilter: "blur(10px)", minWidth: "min(580px, 90vw)" }}>
+              <div style={{ display: "flex", gap: "6px", marginBottom: "16px" }}>
+                {["#ff5f56", "#ffbd2e", "#27c93f"].map((c) => <div key={c} style={{ width: "11px", height: "11px", borderRadius: "50%", background: c }} />)}
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.3)", marginLeft: "8px" }}>deploy.sh</span>
+              </div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8125rem", lineHeight: 2, color: "rgba(255,255,255,0.7)" }}>
+                <div><span style={{ color: "#6ee7b7" }}>$ </span><span style={{ color: "rgba(165,180,252,0.8)" }}>terraform</span> apply <span style={{ color: "#fcd34d" }}>-var</span>=&quot;blue_weight=0&quot; <span style={{ color: "#fcd34d" }}>-var</span>=&quot;green_weight=100&quot;</div>
+                <div style={{ color: "rgba(255,255,255,0.35)" }}>  Plan: 1 to add, 2 to change, 0 to destroy.</div>
+                <div><span style={{ color: "#6ee7b7" }}>✔</span> aws_lb_listener_rule.weighted: Modifications complete</div>
+                <div><span style={{ color: "#6ee7b7" }}>✔</span> aws_cloudwatch_metric_alarm.p99_latency: Created</div>
+                <div style={{ marginTop: "4px" }}><span style={{ color: "#6ee7b7" }}>Apply complete!</span> <span style={{ color: "rgba(255,255,255,0.4)" }}>Resources: 1 added, 2 changed, 0 destroyed.</span></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Body */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
