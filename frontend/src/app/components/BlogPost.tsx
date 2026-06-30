@@ -70,11 +70,28 @@ export function BlogPost({ post }: { post: PostResponse }) {
         {/* Author row */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", paddingBottom: "24px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(80,70,229,0.35)", border: "2px solid rgba(80,70,229,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "'Fraunces', serif", fontSize: "1.1rem", fontWeight: 700, color: "#a5b4fc" }}>{post.slug[0].toUpperCase()}</span>
-            </div>
+            
+            {/* Conditional Avatar Rendering */}
+            {post.author?.avatar_url ? (
+              <img 
+                src={post.author.avatar_url} 
+                alt={post.author.full_name || "Author"} 
+                style={{ width: "40px", height: "40px", borderRadius: "50%", border: "2px solid rgba(80,70,229,0.5)", objectFit: "cover" }} 
+              />
+            ) : (
+              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(80,70,229,0.35)", border: "2px solid rgba(80,70,229,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontFamily: "'Fraunces', serif", fontSize: "1.1rem", fontWeight: 700, color: "#a5b4fc" }}>
+                  {/* Fallback to Author Name initial, then Post Slug initial, then 'A' */}
+                  {(post.author?.full_name?.[0] || post.slug[0] || 'A').toUpperCase()}
+                </span>
+              </div>
+            )}
+
             <div>
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", fontWeight: 600, color: "#fff", margin: 0 }}>Author</p>
+              {/* Dynamic Author Name */}
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", fontWeight: 600, color: "#fff", margin: 0 }}>
+                {post.author?.full_name || "Anonymous"}
+              </p>
               <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>
                 {post.published_at ? new Date(post.published_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : ""}
               </p>
