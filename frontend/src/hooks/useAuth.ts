@@ -23,7 +23,11 @@ const useAuth = () => {
   const queryClient = useQueryClient();
   const { showErrorToast } = useCustomToast();
 
-  const { data: user } = useQuery<UserPublic | null, Error>({
+  const {
+    data: user,
+    isLoading,
+    isFetching,
+  } = useQuery<UserPublic | null, Error>({
     queryKey: ["currentUser"],
     queryFn: async () => {
       const response = await usersReadUserMe({ throwOnError: true });
@@ -95,7 +99,7 @@ const useAuth = () => {
     logout,
     refreshUser,
     user: user ?? null,
-    isLoading: false,
+    isLoading: isLoading || isFetching,
   };
 };
 
