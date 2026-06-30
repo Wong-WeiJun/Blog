@@ -15,7 +15,13 @@ import { TextPage } from "./components/TextPage";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
 
 function RequireAdmin() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  // Wait for auth state to resolve before deciding
+  if (isLoading) {
+    return <div />; // blank while auth resolves; could be a spinner
+  }
+
   if (!user || user.role !== "admin") {
     return <Navigate to="/auth" replace />;
   }
