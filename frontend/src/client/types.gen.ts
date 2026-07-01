@@ -340,6 +340,28 @@ export type TagResponse = {
 };
 
 /**
+ * TagWithCountResponse
+ */
+export type TagWithCountResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Color
+     */
+    color: string;
+    /**
+     * Post Count
+     */
+    post_count: number;
+};
+
+/**
  * Token
  */
 export type Token = {
@@ -1271,6 +1293,23 @@ export type UploadsGetAvatarUploadUrlResponses = {
 };
 
 export type UploadsGetAvatarUploadUrlResponse = UploadsGetAvatarUploadUrlResponses[keyof UploadsGetAvatarUploadUrlResponses];
+
+export type TagsGetTagsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/tags';
+};
+
+export type TagsGetTagsResponses = {
+    /**
+     * Response Tags-Gettags
+     * Successful Response
+     */
+    200: Array<TagWithCountResponse>;
+};
+
+export type TagsGetTagsResponse = TagsGetTagsResponses[keyof TagsGetTagsResponses];
 
 export type PrivateCreateUserData = {
     body: PrivateUserCreate;
