@@ -15,6 +15,7 @@ import useCustomToast from "../../../hooks/useCustomToast";
 
 interface Props {
   onBack: () => void;
+  onPublished?: () => void;
   post?: PostResponse | null; // null/undefined = create mode
 }
 
@@ -492,8 +493,10 @@ function slugify(text: string): string {
 
 const PLACEHOLDER = `## Introduction\n\nStart writing your post here. This editor supports **Markdown** syntax.\n\nUse the toolbar above to insert formatting, headings, code blocks, and links.\n\n\`\`\`bash\n# Example code block\nterraform apply -var="blue_weight=0" -var="green_weight=100"\n\`\`\`\n\n> Blockquotes are great for calling out important notes.\n\nHappy writing!\n`;
 
-export function PostEditor({ onBack, post }: Props) {
-  const isEditing = !!post;
+export function PostEditor({ onBack, onPublished, post }: Props) {
+  const [createdPost, setCreatedPost] = useState<PostResponse | null>(null);
+  const isEditing = !!post || !!createdPost;
+  const activePostId = post?.id ?? createdPost?.id;
   const queryClient = useQueryClient();
   const { showSuccessToast, showErrorToast } = useCustomToast();
 
@@ -524,49 +527,50 @@ export function PostEditor({ onBack, post }: Props) {
   const createMutation = useMutation({
     mutationFn: () =>
       postsCreatePost({
-        body: { title, slug, content, excerpt, status, featured, tag_names: tags, cover_image_url: coverImage },
+        body: { title, slug, content, excerpt, status: "draft", featured, tag_names: tags, cover_image_url: coverImage },
       }),
-    onSuccess: () => {
-      showSuccessToast("Post created.");
+    onSuccess: (data) => {
+      showSuccessToast("Draft saved.");
+      setCreatedPost(data.data);
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-      onBack();
     },
-    onError: () => showErrorToast("Failed to create post."),
+    onError: () => showErrorToast("Failed to save draft."),
   });
 
   const updateMutation = useMutation({
     mutationFn: () =>
       postsUpdatePost({
-        path: { post_id: post!.id },
+        path: { post_id: activePostId! },
         body: { title, slug, content, excerpt, status, featured, tag_names: tags, cover_image_url: coverImage },
       }),
     onSuccess: () => {
       showSuccessToast("Post saved.");
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["post", post!.slug] });
+      queryClient.invalidateQueries({ queryKey: ["post", post?.slug ?? createdPost?.slug] });
     },
     onError: () => showErrorToast("Failed to save post."),
   });
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      // Save first, then publish
       if (isEditing) {
-        await postsUpdatePost({ path: { post_id: post!.id }, body: { title, slug, content, excerpt, featured, tag_names: tags, cover_image_url: coverImage } });
-        return postsPublishPost({ path: { post_id: post!.id } });
+        await postsUpdatePost({ path: { post_id: activePostId! }, body: { title, slug, content, excerpt, featured, tag_names: tags, cover_image_url: coverImage } });
+        return postsPublishPost({ path: { post_id: activePostId! } });
       } else {
         const created = await postsCreatePost({ body: { title, slug, content, excerpt, status: "draft", featured, tag_names: tags, cover_image_url: coverImage } });
         return postsPublishPost({ path: { post_id: created.data!.id } });
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       showSuccessToast("Post published!");
       setStatus("published");
+      setCreatedPost(data.data);
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-      if (isEditing) queryClient.invalidateQueries({ queryKey: ["post", post!.slug] });
+      if (isEditing) queryClient.invalidateQueries({ queryKey: ["post", post?.slug ?? createdPost?.slug] });
+      onPublished?.();
     },
     onError: () => showErrorToast("Failed to publish post."),
   });
@@ -577,6 +581,31 @@ export function PostEditor({ onBack, post }: Props) {
   const justPublished = publishMutation.isSuccess;
 
   const handleSave = () => { isEditing ? updateMutation.mutate() : createMutation.mutate(); };
+
+  const handlePreview = async () => {
+    if (!slug) return;
+    if (!isEditing) {
+      if (!title.trim() || !content.trim()) {
+        showErrorToast("Please add a title and content before previewing.");
+        return;
+      }
+      const previewWindow = window.open("", "_blank");
+      if (!previewWindow) {
+        showErrorToast("Please allow popups to preview.");
+        return;
+      }
+      try {
+        const result = await createMutation.mutateAsync();
+        setCreatedPost(result.data);
+        previewWindow.location.href = `/blog/${result.data.slug}`;
+      } catch {
+        previewWindow.close();
+        showErrorToast("Failed to save draft for preview.");
+      }
+    } else {
+      window.open(`/blog/${slug}`, "_blank");
+    }
+  };
 
   const canSubmit = title.trim().length > 0 && slug.trim().length > 0 && content.trim().length > 0;
 
@@ -616,9 +645,10 @@ export function PostEditor({ onBack, post }: Props) {
 
         {/* Preview */}
         <button
-          style={{ display: "flex", alignItems: "center", gap: "6px", color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: "8px", padding: "7px 14px", fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", cursor: "pointer", flexShrink: 0, transition: "all 0.15s" }}
-          onClick={() => { if (slug) window.open(`/post/${slug}`, "_blank"); }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
+          disabled={isSaving || isPublishing}
+          style={{ display: "flex", alignItems: "center", gap: "6px", color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: "8px", padding: "7px 14px", fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", cursor: (isSaving || isPublishing) ? "not-allowed" : "pointer", flexShrink: 0, transition: "all 0.15s", opacity: (isSaving || isPublishing) ? 0.5 : 1 }}
+          onClick={handlePreview}
+          onMouseEnter={(e) => { if (!(isSaving || isPublishing)) { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; } }}
           onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.5)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.09)"; }}
         >
           <Eye size={14} />Preview
@@ -653,7 +683,7 @@ export function PostEditor({ onBack, post }: Props) {
         <div style={{ flex: "0 0 70%", display: "flex", flexDirection: "column", borderRight: "1px solid rgba(255,255,255,0.07)", overflow: "hidden" }}>
           {/* Slug row */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)", background: "rgba(0,0,0,0.1)" }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>{BRAND_DOMAIN}/post/</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>{BRAND_DOMAIN}/blog/</span>
             <input
               value={slug}
               onChange={(e) => { setSlug(slugify(e.target.value)); setSlugEdited(true); }}
