@@ -28,9 +28,10 @@ export function AdminDashboard() {
   const openNewPost  = () => { setEditingPost(null); setEditorOpen(true); };
   const openEditPost = (post: PostResponse) => { setEditingPost(post); setEditorOpen(true); };
   const closeEditor  = () => { setEditorOpen(false); setEditingPost(null); };
+  const handlePublished = () => { closeEditor(); setView("posts"); };
 
   if (editorOpen) {
-    return <PostEditor onBack={closeEditor} post={editingPost} />;
+    return <PostEditor onBack={closeEditor} onPublished={handlePublished} post={editingPost} />;
   }
 
   return (
