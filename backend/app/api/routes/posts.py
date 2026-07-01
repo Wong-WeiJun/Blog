@@ -8,6 +8,7 @@ from app.api.deps import (
     CurrentUser,
     SessionDep,
     get_current_active_superuser,
+    OptionalCurrentUser,
 )
 from app.core.config import settings
 from app.models import (
@@ -95,22 +96,26 @@ def read_all_posts(
 def read_post(
     session: SessionDep,
     slug: str,
+    current_user: OptionalCurrentUser,
 ) -> PostResponse:
-    # slug is a path parameter — must NOT be declared as Query(...)
-    statement = select(Post).where(
-        Post.slug == slug, Post.status == PostStatus.published
-    )
+    statement = select(Post).where(Post.slug == slug)
     post = session.exec(statement).one_or_none()
+
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
 
-    try:
-        post.view_count = (post.view_count or 0) + 1
-        session.add(post)
-        session.commit()
-        session.refresh(post)
-    except Exception:
-        session.rollback()
+    is_owner_or_admin = current_user and current_user.is_superuser
+    if post.status != PostStatus.published and not is_owner_or_admin:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    if post.status == PostStatus.published:
+        try:
+            post.view_count = (post.view_count or 0) + 1
+            session.add(post)
+            session.commit()
+            session.refresh(post)
+        except Exception:
+            session.rollback()
 
     return PostResponse.model_validate(post)
 
