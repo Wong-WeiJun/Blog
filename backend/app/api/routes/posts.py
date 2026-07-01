@@ -6,9 +6,9 @@ from sqlmodel import Session, func, select
 
 from app.api.deps import (
     CurrentUser,
+    OptionalCurrentUser,
     SessionDep,
     get_current_active_superuser,
-    OptionalCurrentUser,
 )
 from app.core.config import settings
 from app.models import (
