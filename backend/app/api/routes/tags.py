@@ -33,4 +33,3 @@ def getTags(*, session: SessionDep) -> list[TagWithCountResponse]:
         )
         for row in results
     ]
-
