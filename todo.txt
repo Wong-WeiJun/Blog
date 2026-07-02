@@ -1,0 +1,9 @@
+analytics
+contact
+overview
+seperate blog page
+footer
+about me
+login
+projects
+QOL
