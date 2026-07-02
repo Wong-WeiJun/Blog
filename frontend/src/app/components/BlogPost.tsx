@@ -207,7 +207,7 @@ export function BlogPost({ post }: { post: PostResponse }) {
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", marginTop: "48px" }} />
 
             {/* Comments */}
-            <CommentSection />
+            <CommentSection postId={post.id} />
           </article>
 
         </div>
