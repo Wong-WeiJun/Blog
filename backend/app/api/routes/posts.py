@@ -46,6 +46,8 @@ def read_posts(
             Post.title.ilike(f"%{search}%") | Post.excerpt.ilike(f"%{search}%")  # type: ignore[attr-defined]
         )
 
+    query = query.order_by(Post.created_at.desc())
+
     total = session.exec(select(func.count()).select_from(query.subquery())).one()
     posts = session.exec(query.offset(offset).limit(limit)).all()
 
