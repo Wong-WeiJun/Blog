@@ -1,22 +1,21 @@
 import uuid
 
 from fastapi import APIRouter, HTTPException
-from sqlmodel import select, delete
+from sqlmodel import delete, select
 
-
-from app.api.deps import SessionDep, CurrentUser, OptionalCurrentUser
+from app.api.deps import CurrentUser, OptionalCurrentUser, SessionDep
 from app.models import (
     Comment,
-    CommentCreate,
-    CommentResponse,
     CommentAuthor,
+    CommentCreate,
     CommentLike,
+    CommentResponse,
+    Message,
     Post,
     User,
-    Message,
 )
 
-router = APIRouter()
+router = APIRouter(tags=["comments"])
 
 
 @router.get("/posts/{post_id}/comments", response_model=list[CommentResponse])
@@ -52,8 +51,8 @@ def get_post_comments(
         select(CommentLike).where(CommentLike.comment_id.in_(comment_ids))
     ).all()
 
-    likes_count_map = {cid: 0 for cid in comment_ids}
-    user_liked_map = {cid: False for cid in comment_ids}
+    likes_count_map = dict.fromkeys(comment_ids, 0)
+    user_liked_map = dict.fromkeys(comment_ids, False)
 
     for like in likes:
         likes_count_map[like.comment_id] += 1
@@ -78,7 +77,7 @@ def get_post_comments(
 
     # Assemble the nested tree
     root_comments = []
-    for c_id, c_resp in comment_dict.items():
+    for _, c_resp in comment_dict.items():
         if c_resp.parent_id:
             parent = comment_dict.get(c_resp.parent_id)
             if parent:
@@ -198,4 +197,3 @@ def delete_comment(id: uuid.UUID, session: SessionDep, current_user: CurrentUser
     session.commit()
 
     return Message(message="Comment deleted successfully")
-
