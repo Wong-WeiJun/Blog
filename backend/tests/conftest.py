@@ -7,7 +7,13 @@ from sqlmodel import Session, delete
 from app.core.config import settings
 from app.core.db import engine, init_db
 from app.main import app
-from app.models import Post, PostTagLink, User
+from app.models import (
+    Comment,
+    CommentLike,
+    Post,
+    PostTagLink,
+    User,
+)  # add Comment, CommentLike
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
 
@@ -17,8 +23,10 @@ def db() -> Generator[Session, None, None]:
     with Session(engine) as session:
         init_db(session)
         yield session
-        session.execute(delete(PostTagLink))
-        session.execute(delete(Post))
+        session.execute(delete(CommentLike))  # references Comment
+        session.execute(delete(Comment))  # references Post + User
+        session.execute(delete(PostTagLink))  # references Post + Tag
+        session.execute(delete(Post))  # references User
         session.execute(delete(User))
         session.commit()
 
@@ -39,3 +47,4 @@ def normal_user_token_headers(client: TestClient, db: Session) -> dict[str, str]
     return authentication_token_from_email(
         client=client, email=settings.EMAIL_TEST_USER, db=db
     )
+
