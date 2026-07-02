@@ -41,6 +41,73 @@ export type BodyLoginLoginAccessToken = {
 };
 
 /**
+ * CommentAuthor
+ */
+export type CommentAuthor = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Full Name
+     */
+    full_name?: string | null;
+    /**
+     * Avatar Url
+     */
+    avatar_url?: string | null;
+};
+
+/**
+ * CommentCreate
+ */
+export type CommentCreate = {
+    /**
+     * Body
+     */
+    body: string;
+};
+
+/**
+ * CommentResponse
+ */
+export type CommentResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Post Id
+     */
+    post_id: string;
+    /**
+     * Parent Id
+     */
+    parent_id: string | null;
+    /**
+     * Body
+     */
+    body: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+    author: CommentAuthor;
+    /**
+     * Likes Count
+     */
+    likes_count?: number;
+    /**
+     * User Liked
+     */
+    user_liked?: boolean;
+    /**
+     * Replies
+     */
+    replies?: Array<CommentResponse>;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -115,13 +182,13 @@ export type PostAuthorResponse = {
  */
 export type PostCreate = {
     /**
-     * Slug
-     */
-    slug: string;
-    /**
      * Title
      */
     title: string;
+    /**
+     * Slug
+     */
+    slug?: string | null;
     /**
      * Excerpt
      */
@@ -1310,6 +1377,157 @@ export type TagsGetTagsResponses = {
 };
 
 export type TagsGetTagsResponse = TagsGetTagsResponses[keyof TagsGetTagsResponses];
+
+export type CommentsGetPostCommentsData = {
+    body?: never;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_id}/comments';
+};
+
+export type CommentsGetPostCommentsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CommentsGetPostCommentsError = CommentsGetPostCommentsErrors[keyof CommentsGetPostCommentsErrors];
+
+export type CommentsGetPostCommentsResponses = {
+    /**
+     * Response Comments-Get Post Comments
+     * Successful Response
+     */
+    200: Array<CommentResponse>;
+};
+
+export type CommentsGetPostCommentsResponse = CommentsGetPostCommentsResponses[keyof CommentsGetPostCommentsResponses];
+
+export type CommentsCreateCommentData = {
+    body: CommentCreate;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_id}/comments';
+};
+
+export type CommentsCreateCommentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CommentsCreateCommentError = CommentsCreateCommentErrors[keyof CommentsCreateCommentErrors];
+
+export type CommentsCreateCommentResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type CommentsCreateCommentResponse = CommentsCreateCommentResponses[keyof CommentsCreateCommentResponses];
+
+export type CommentsReplyToCommentData = {
+    body: CommentCreate;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/comments/{id}/replies';
+};
+
+export type CommentsReplyToCommentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CommentsReplyToCommentError = CommentsReplyToCommentErrors[keyof CommentsReplyToCommentErrors];
+
+export type CommentsReplyToCommentResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type CommentsReplyToCommentResponse = CommentsReplyToCommentResponses[keyof CommentsReplyToCommentResponses];
+
+export type CommentsToggleCommentLikeData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/comments/{id}/like';
+};
+
+export type CommentsToggleCommentLikeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CommentsToggleCommentLikeError = CommentsToggleCommentLikeErrors[keyof CommentsToggleCommentLikeErrors];
+
+export type CommentsToggleCommentLikeResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type CommentsToggleCommentLikeResponse = CommentsToggleCommentLikeResponses[keyof CommentsToggleCommentLikeResponses];
+
+export type CommentsDeleteCommentData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/comments/{id}';
+};
+
+export type CommentsDeleteCommentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CommentsDeleteCommentError = CommentsDeleteCommentErrors[keyof CommentsDeleteCommentErrors];
+
+export type CommentsDeleteCommentResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type CommentsDeleteCommentResponse = CommentsDeleteCommentResponses[keyof CommentsDeleteCommentResponses];
 
 export type PrivateCreateUserData = {
     body: PrivateUserCreate;
