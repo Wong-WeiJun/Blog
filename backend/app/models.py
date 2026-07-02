@@ -205,7 +205,6 @@ class PaginatedPostsResponse(SQLModel):
 
 class PostCreate(SQLModel):
     title: str = Field(min_length=1, max_length=255)
-    # 1. Make slug optional so the user doesn't have to provide it manually
     slug: str | None = Field(default=None, max_length=255)
     excerpt: str = Field(min_length=1, max_length=1000)
     content: str = Field(min_length=1)
@@ -216,7 +215,6 @@ class PostCreate(SQLModel):
     meta_description: str | None = Field(default=None, max_length=500)
     tag_names: list[str] = []
 
-    # 2. Automatically generate and append the random slug suffix
     @model_validator(mode="before")
     @classmethod
     def handle_slug_generation(cls, data: any) -> any:
@@ -224,15 +222,11 @@ class PostCreate(SQLModel):
             title = data.get("title")
             slug = data.get("slug")
 
-            # Case A: User left slug blank -> Generate from Title + Suffix
             if not slug and title:
                 base_slug = slugify(title)
                 data["slug"] = f"{base_slug}-{random_slug_suffix()}"
-
-            # Case B: User provided a custom slug -> Append Suffix anyway for uniqueness guarantee
             elif slug:
-                base_slug = slugify(slug)
-                data["slug"] = f"{base_slug}-{random_slug_suffix()}"
+                data["slug"] = slugify(slug)
 
         return data
 
