@@ -52,19 +52,25 @@ def _su_headers(client: TestClient) -> dict[str, str]:
 
 class TestReadPosts:
     def test_returns_only_published(
-        self, client: TestClient, db: Session, superuser_token_headers
+        self,
+        client: TestClient,
+        db: Session,
     ):
         author = create_random_user(db)
         pub = create_random_post(db, author, status=PostStatus.published)
-        create_random_post(db, author, status=PostStatus.draft)
+        draft = create_random_post(db, author, status=PostStatus.draft)
 
-        r = client.get(BASE)
-        assert r.status_code == 200
-        data = r.json()
-        slugs = [p["slug"] for p in data["posts"]]
-        assert pub.slug in slugs
-        # Draft must never appear in the public list
-        for p in data["posts"]:
+        # Published post must be accessible by slug
+        r_pub = client.get(f"{BASE}/{pub.slug}")
+        assert r_pub.status_code == 200
+        assert r_pub.json()["slug"] == pub.slug
+
+        r_draft = client.get(f"{BASE}/{draft.slug}")
+        assert r_draft.status_code == 404
+
+        r_list = client.get(BASE)
+        assert r_list.status_code == 200
+        for p in r_list.json()["posts"]:
             assert p["status"] == "published"
 
     def test_pagination(self, client: TestClient, db: Session):
