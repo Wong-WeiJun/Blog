@@ -266,6 +266,31 @@ class CommentLike(SQLModel, table=True):
     user_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
 
 
+class CommentCreate(SQLModel):
+    body: str = Field(min_length=1, max_length=2000)
+
+
+class CommentAuthor(SQLModel):
+    id: uuid.UUID
+    full_name: str | None = None
+    avatar_url: str | None = None
+
+
+class CommentResponse(SQLModel):
+    id: uuid.UUID
+    post_id: uuid.UUID
+    parent_id: uuid.UUID | None
+    body: str
+    created_at: datetime
+    author: CommentAuthor
+    likes_count: int = 0
+    user_liked: bool = False
+    replies: list["CommentResponse"] = []
+
+
+CommentResponse.model_rebuild()
+
+
 class ContactSubmission(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
