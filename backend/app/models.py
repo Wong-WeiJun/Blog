@@ -295,3 +295,10 @@ class ContactSubmission(SQLModel, table=True):
     created_at: datetime = Field(
         default_factory=get_datetime_utc, sa_type=DateTime(timezone=True)
     )
+
+
+class ContactRequest(SQLModel):
+    name: str
+    email: EmailStr
+    subject: str
+    message: str
