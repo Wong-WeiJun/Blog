@@ -531,7 +531,7 @@ export function PostEditor({ onBack, onPublished, post }: Props) {
       }),
     onSuccess: (data) => {
       showSuccessToast("Draft saved.");
-      setCreatedPost(data.data);
+      setCreatedPost(data.data ?? null);
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
@@ -566,7 +566,7 @@ export function PostEditor({ onBack, onPublished, post }: Props) {
     onSuccess: (data) => {
       showSuccessToast("Post published!");
       setStatus("published");
-      setCreatedPost(data.data);
+      setCreatedPost(data.data ?? null);
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       if (isEditing) queryClient.invalidateQueries({ queryKey: ["post", post?.slug ?? createdPost?.slug] });
@@ -596,8 +596,13 @@ export function PostEditor({ onBack, onPublished, post }: Props) {
       }
       try {
         const result = await createMutation.mutateAsync();
-        setCreatedPost(result.data);
-        previewWindow.location.href = `/blog/${result.data.slug}`;
+        if (result.data) {
+          setCreatedPost(result.data);
+          previewWindow.location.href = `/blog/${result.data.slug}`;
+        } else {
+          previewWindow.close();
+          showErrorToast("Failed to save draft for preview.");
+        }
       } catch {
         previewWindow.close();
         showErrorToast("Failed to save draft for preview.");
