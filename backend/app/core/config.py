@@ -130,5 +130,9 @@ class Settings(BaseSettings):
             self.AWS_ACCESS_KEY_ID and self.AWS_SECRET_ACCESS_KEY and self.AWS_S3_BUCKET
         )
 
+    RESEND_KEY: str | None = None
+    FROM_EMAIL: str | None = None
+    CONTACT_EMAIL: str | None = None
+
 
 settings = Settings()  # type: ignore
