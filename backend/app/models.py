@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from enum import Enum
 
 from pydantic import ConfigDict, EmailStr, model_validator
-from sqlalchemy import DateTime
+from sqlalchemy import Column, DateTime, JSON
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -124,6 +124,11 @@ class TagWithCountResponse(SQLModel):
     name: str
     color: str
     post_count: int
+
+
+class TagCreate(SQLModel):
+    name: str = Field(min_length=1, max_length=50)
+    color: str = "#5046e5"
 
 
 class PostTagLink(SQLModel, table=True):
@@ -330,3 +335,77 @@ class AdminStatsResponse(SQLModel):
     top_posts: list[TopPostStat]
     comments_by_day: list[DailyCount]
     period: str | None = None
+
+
+class ProjectStatus(str, Enum):
+    completed = "completed"
+    in_progress = "in_progress"
+    archived = "archived"
+
+
+class Project(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    title: str = Field(max_length=255)
+    description: str
+    stack: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    status: ProjectStatus = ProjectStatus.in_progress
+    stars: int = 0
+    forks: int = 0
+    github_url: str | None = Field(default=None, max_length=1000)
+    live_url: str | None = Field(default=None, max_length=1000)
+    accent: str = "#5046e5"
+    category: str = Field(max_length=100)
+    sort_order: int = 0
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc, sa_type=DateTime(timezone=True)
+    )
+    updated_at: datetime = Field(
+        default_factory=get_datetime_utc, sa_type=DateTime(timezone=True)
+    )
+
+
+class ProjectCreate(SQLModel):
+    title: str = Field(min_length=1, max_length=255)
+    description: str = Field(min_length=1)
+    stack: list[str] = []
+    status: ProjectStatus = ProjectStatus.in_progress
+    stars: int = 0
+    forks: int = 0
+    github_url: str | None = Field(default=None, max_length=1000)
+    live_url: str | None = Field(default=None, max_length=1000)
+    accent: str = "#5046e5"
+    category: str = Field(min_length=1, max_length=100)
+    sort_order: int = 0
+
+
+class ProjectUpdate(SQLModel):
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, min_length=1)
+    stack: list[str] | None = None
+    status: ProjectStatus | None = None
+    stars: int | None = None
+    forks: int | None = None
+    github_url: str | None = Field(default=None, max_length=1000)
+    live_url: str | None = Field(default=None, max_length=1000)
+    accent: str | None = None
+    category: str | None = Field(default=None, min_length=1, max_length=100)
+    sort_order: int | None = None
+
+
+class ProjectResponse(SQLModel):
+    id: uuid.UUID
+    title: str
+    description: str
+    stack: list[str]
+    status: ProjectStatus
+    stars: int
+    forks: int
+    github_url: str | None
+    live_url: str | None
+    accent: str
+    category: str
+    sort_order: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
