@@ -1,18 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router";
-
 import {
-  type BodyLoginLoginAccessToken,
-  loginLoginAccessToken,
   loginRecoverPassword,
+  loginResetPassword,
+  type BodyLoginLoginAccessToken,
   type UserPublic,
   type UserRegister,
   usersReadUserMe,
   usersRegisterUser,
+  loginLoginAccessToken,
 } from "@/client";
 import { client } from "@/client/client.gen";
 import { handleError } from "@/lib/api";
 import useCustomToast from "./useCustomToast";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null;
@@ -55,7 +55,6 @@ const useAuth = () => {
     });
     const token = response.data.access_token;
     localStorage.setItem("access_token", token);
-    // Re-configure the client with the new token for all future requests
     client.setConfig({
       auth: () => token,
     });
@@ -88,6 +87,15 @@ const useAuth = () => {
     onError: handleError.bind(showErrorToast),
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ token, newPassword }: { token: string; newPassword: string }) =>
+      loginResetPassword({
+        body: { token, new_password: newPassword },
+        throwOnError: true,
+      }),
+    onError: handleError.bind(showErrorToast),
+  });
+
   const refreshUser = () => {
     queryClient.invalidateQueries({ queryKey: ["currentUser"] });
   };
@@ -96,6 +104,7 @@ const useAuth = () => {
     signUpMutation,
     loginMutation,
     recoverPasswordMutation,
+    resetPasswordMutation,
     logout,
     refreshUser,
     user: user ?? null,
