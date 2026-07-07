@@ -93,25 +93,57 @@ function Hero() {
           A developer blog chronicling cloud infrastructure, DevOps practices, and the hard-won lessons learned along the way.
         </p>
 
-        {/* Buttons */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "8px" }}>
-          <span
-            title="Coming soon"
-            style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", fontWeight: 600, color: "rgba(255,255,255,0.3)", background: "rgba(80,70,229,0.1)", border: "1px solid rgba(80,70,229,0.15)", borderRadius: "10px", padding: "11px 22px", pointerEvents: "none" }}
+          <a
+            href="/Resume.pdf"
+            download="WongWeiJun_Resume.pdf"
+            style={{ 
+              display: "inline-flex", 
+              alignItems: "center", 
+              gap: "8px", 
+              fontFamily: "'Inter', sans-serif", 
+              fontSize: "0.9375rem", 
+              fontWeight: 600, 
+              color: "rgba(255,255,255,0.9)", 
+              background: "rgba(80,70,229,0.2)", 
+              border: "1px solid rgba(80,70,229,0.4)", 
+              borderRadius: "10px", 
+              padding: "11px 22px", 
+              textDecoration: "none", 
+              transition: "background 0.2s ease" 
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(80,70,229,0.3)" }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(80,70,229,0.2)" }}
           >
-            <Download size={16} /> Download R Sum
-          </span>
+            <Download size={16} /> Download Resume
+          </a>
+
           {[
-            { icon: <Github size={18} />, label: "GitHub" },
-            { icon: <Linkedin size={18} />, label: "LinkedIn" },
-          ].map(({ icon, label }) => (
-            <span
+            { icon: <Github size={18} />, label: "GitHub", url: "https://github.com/Wong-WeiJun" },
+            { icon: <Linkedin size={18} />, label: "LinkedIn", url: "https://www.linkedin.com/in/wei-jun-wong-507069357/" },
+          ].map(({ icon, label, url }) => (
+            <a
               key={label}
-              title={`${label} — Coming soon`}
-              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", borderRadius: "10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.3)", pointerEvents: "none" }}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={label}
+              style={{ 
+                display: "inline-flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                width: "44px", 
+                height: "44px", 
+                borderRadius: "10px", 
+                background: "rgba(255,255,255,0.05)", 
+                border: "1px solid rgba(255,255,255,0.1)", 
+                color: "rgba(255,255,255,0.8)",
+                textDecoration: "none",
+                transition: "background 0.2s"
+              }}
             >
               {icon}
-            </span>
+            </a>
           ))}
         </div>
 
