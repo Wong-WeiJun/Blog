@@ -7,6 +7,7 @@ from sqlmodel import Session
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.crud import create_user
+from app.main import app
 from app.models import User, UserCreate
 from app.utils import generate_password_reset_token
 from tests.utils.user import user_authentication_headers
@@ -49,10 +50,7 @@ def test_use_access_token(
 def test_recovery_password(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ) -> None:
-    with (
-        patch("app.core.config.settings.SMTP_HOST", "smtp.example.com"),
-        patch("app.core.config.settings.SMTP_USER", "admin@example.com"),
-    ):
+    with patch("app.api.routes.login.send_email") as send_email_mock:
         email = "test@example.com"
         r = client.post(
             f"{settings.API_V1_STR}/password-recovery/{email}",
@@ -62,6 +60,23 @@ def test_recovery_password(
         assert r.json() == {
             "message": "If that email is registered, we sent a password recovery link"
         }
+        send_email_mock.assert_called_once()
+
+
+def test_recovery_password_no_email_provider(
+    normal_user_token_headers: dict[str, str]
+) -> None:
+    with patch(
+        "app.api.routes.login.send_email",
+        side_effect=RuntimeError("No email provider configured."),
+    ):
+        email = "test@example.com"
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.post(
+                f"{settings.API_V1_STR}/password-recovery/{email}",
+                headers=normal_user_token_headers,
+            )
+        assert r.status_code == 500
 
 
 def test_recovery_password_user_not_exits(
