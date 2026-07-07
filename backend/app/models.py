@@ -303,3 +303,30 @@ class ContactRequest(SQLModel):
     subject: str
     message: str
     captcha_token: str
+
+
+class TopPostStat(SQLModel):
+    id: uuid.UUID
+    title: str
+    slug: str
+    view_count: int
+
+
+class DailyCount(SQLModel):
+    date: str
+    count: int
+
+
+class AdminStatsResponse(SQLModel):
+    total_posts: int
+    published_posts: int
+    draft_posts: int
+    featured_posts: int
+    total_views: int
+    total_comments: int
+    comments_in_period: int
+    comments_prev_period: int
+    avg_read_time_minutes: float
+    top_posts: list[TopPostStat]
+    comments_by_day: list[DailyCount]
+    period: str | None = None
