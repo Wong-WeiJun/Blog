@@ -3,13 +3,8 @@ import { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { postsReadPosts } from "@/client/sdk.gen"; // exists after pnpm generate-client
-import type { PostResponse } from "@/client/types.gen";
-
-// ─── Tag filter list ────────────────────────────────────────────────────────
-// TODO Phase 3: replace this hardcoded list with GET /tags once that
-// endpoint exists. For now it stays static.
-const TAGS = ["All", "AWS", "Terraform", "Docker", "CI/CD", "Kubernetes", "Python", "Linux"];
+import { postsReadPosts, tagsGetTags } from "@/client/sdk.gen";
+import type { PostResponse, TagWithCountResponse } from "@/client/types.gen";
 
 // ─── PostCard ────────────────────────────────────────────────────────────────
 // Two field references changed from the mock version:
@@ -128,10 +123,26 @@ export function SkeletonCard() {
 }
 
 // ─── PostGrid ─────────────────────────────────────────────────────────────────
-export function PostGrid() {
-  const [activeTag, setActiveTag]   = useState("All");
+export function PostGrid({ initialTag = "All" }: { initialTag?: string }) {
+  const [activeTag, setActiveTag]   = useState(initialTag);
   const [page, setPage]             = useState(1);
   const [allPosts, setAllPosts]     = useState<PostResponse[]>([]);
+
+  useEffect(() => {
+    setActiveTag(initialTag);
+    setPage(1);
+    setAllPosts([]);
+  }, [initialTag]);
+
+  const { data: tags = [] } = useQuery({
+    queryKey: ["tags"],
+    queryFn: async () => {
+      const res = await tagsGetTags();
+      return (res.data ?? []) as TagWithCountResponse[];
+    },
+  });
+
+  const tagFilters = ["All", ...tags.filter((t) => t.post_count > 0).map((t) => t.name)];
 
   // useQuery fetches (and re-fetches) whenever page or activeTag changes.
   // TanStack Query handles the loading/error states — no manual setLoading needed.
@@ -175,27 +186,29 @@ export function PostGrid() {
   return (
     <div className="flex flex-col gap-6">
       {/* Tag filter */}
-      <div className="flex flex-wrap gap-2">
-        {TAGS.map((tag) => (
-          <button
-            key={tag}
-            onClick={() => handleTagChange(tag)}
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: "0.8125rem", fontWeight: 500,
-              padding: "6px 14px", borderRadius: "999px",
-              border: activeTag === tag
-                ? "1px solid rgba(224,123,57,0.7)"
-                : "1px solid rgba(255,255,255,0.1)",
-              background: activeTag === tag ? "rgba(224,123,57,0.2)" : "transparent",
-              color: activeTag === tag ? "#f0a86b" : "rgba(255,255,255,0.5)",
-              cursor: "pointer", transition: "all 0.15s",
-            }}
-          >
-            {tag}
-          </button>
-        ))}
-      </div>
+      {tagFilters.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {tagFilters.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => handleTagChange(tag)}
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: "0.8125rem", fontWeight: 500,
+                padding: "6px 14px", borderRadius: "999px",
+                border: activeTag === tag
+                  ? "1px solid rgba(224,123,57,0.7)"
+                  : "1px solid rgba(255,255,255,0.1)",
+                background: activeTag === tag ? "rgba(224,123,57,0.2)" : "transparent",
+                color: activeTag === tag ? "#f0a86b" : "rgba(255,255,255,0.5)",
+                cursor: "pointer", transition: "all 0.15s",
+              }}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Error state */}
       {isError && (
