@@ -8,12 +8,15 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "generate-client": "openapi-ts --input openapi.json --output src/client --client @hey-api/client-axios",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@hey-api/client-axios": "^0.9.1",
+    "@marsidev/react-turnstile": "^1.5.3",
     "@mui/icons-material": "7.3.5",
     "@mui/material": "7.3.5",
     "@popperjs/core": "2.11.8",
@@ -79,12 +82,17 @@
   "devDependencies": {
     "@hey-api/openapi-ts": "0.73.0",
     "@tailwindcss/vite": "4.1.12",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "4.7.0",
+    "jsdom": "^29.1.1",
     "tailwindcss": "4.1.12",
     "typescript": "^5.9.3",
-    "vite": "6.3.5"
+    "vite": "6.3.5",
+    "vitest": "^4.1.10"
   },
   "workspaces": [
     "."
