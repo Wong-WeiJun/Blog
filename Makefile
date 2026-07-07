@@ -1,4 +1,4 @@
-.PHONY: help dev dev-backend dev-frontend build test test-backend \
+.PHONY: help dev dev-backend dev-frontend build test test-backend test-frontend \
         lint lint-backend lint-frontend migrate reset-db logs stop clean generate-client env
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -22,6 +22,7 @@ help:
 	@echo "  Test"
 	@echo "    make test             Run all tests"
 	@echo "    make test-backend     Run backend pytest only"
+	@echo "    make test-frontend    Run frontend Vitest only"
 	@echo ""
 	@echo "  Lint"
 	@echo "    make lint             Run all linters"
@@ -64,7 +65,7 @@ build:
 	docker compose -f compose.yml build
 
 # ── Test ─────────────────────────────────────────────────────────────────────
-test: test-backend
+test: test-backend test-frontend
 
 test-backend:
 	$(COMPOSE) up -d db mailcatcher
@@ -74,8 +75,8 @@ test-backend:
 	cd $(BACKEND_DIR) && uv run bash scripts/tests-start.sh
 	$(COMPOSE) down -v --remove-orphans
 
-# test-frontend (Playwright E2E) — disabled (no Playwright setup)
-# Re-enable by adding a playwright service to compose.override.yml
+test-frontend:
+	cd $(FRONTEND_DIR) && bun run test
 
 # ── Lint ──────────────────────────────────────────────────────────────────────
 lint: lint-backend lint-frontend
