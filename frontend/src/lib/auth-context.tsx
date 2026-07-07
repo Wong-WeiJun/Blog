@@ -17,17 +17,24 @@ export interface AuthUser {
   id: string;
 }
 
+interface MutationOptions {
+  onSuccess?: () => void;
+  onError?: (error: unknown) => void;
+}
+
 interface AuthContextValue {
   user: AuthUser | null;
   login: (email: string, password: string) => void;
   logout: () => void;
   register: (name: string, email: string, password: string) => void;
-  recoverPassword: (email: string) => void;
+  recoverPassword: (email: string, options?: MutationOptions) => void;
+  resetPassword: (token: string, password: string, options?: MutationOptions) => void;
   refreshUser: () => void;
   isLoading: boolean;
   isLoggingIn: boolean;
   isRegistering: boolean;
   isRecoveringPassword: boolean;
+  isResettingPassword: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -63,14 +70,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const recoverPassword = useCallback(
-    (email: string) => { auth.recoverPasswordMutation.mutate(email); },
+    (email: string, options?: MutationOptions) => {
+      auth.recoverPasswordMutation.mutate(email, {
+        onSuccess: options?.onSuccess,
+        onError: options?.onError,
+      });
+    },
     [auth.recoverPasswordMutation],
+  );
+
+  const resetPassword = useCallback(
+    (token: string, password: string, options?: MutationOptions) => {
+      auth.resetPasswordMutation.mutate(
+        { token, newPassword: password },
+        {
+          onSuccess: options?.onSuccess,
+          onError: options?.onError,
+        },
+      );
+    },
+    [auth.resetPasswordMutation],
   );
 
   const logout = useCallback(() => { auth.logout(); }, [auth.logout]);
 
-  // Invalidates the currentUser query so any component using useAuth()
-  // automatically re-fetches after an avatar or profile update.
   const refreshUser = useCallback(() => {
     auth.refreshUser();
   }, [auth.refreshUser]);
@@ -85,11 +108,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         register,
         recoverPassword,
+        resetPassword,
         refreshUser,
         isLoading: auth.isLoading,
         isLoggingIn: auth.loginMutation.isPending,
         isRegistering: auth.signUpMutation.isPending,
         isRecoveringPassword: auth.recoverPasswordMutation.isPending,
+        isResettingPassword: auth.resetPasswordMutation.isPending,
       }}
     >
       {children}
@@ -103,7 +128,6 @@ export function useAuthContext() {
   return ctx;
 }
 
-// Legacy export name maintained for existing consumers
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used inside an AuthProvider");
