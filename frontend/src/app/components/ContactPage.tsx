@@ -1,16 +1,22 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { CSSProperties } from "react";
 import { Link } from "react-router";
+import { useMutation } from "@tanstack/react-query";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { AxiosError } from "axios";
 import {
   Mail, Github, Linkedin, Copy, Check, Send, ArrowLeft,
   AlertCircle, CheckCircle2, Loader2, Twitter, MessageSquare,
 } from "lucide-react";
 import { BRAND_EMAIL } from "../../lib/constants";
+import { submitContactForm } from "@/lib/contact";
+import { validateContactForm } from "@/lib/contact-validation";
 
 /* ── field ── */
 function Field({
-  label, value, onChange, type = "text", placeholder, error, rows,
+  id, label, value, onChange, type = "text", placeholder, error, rows,
 }: {
+  id: string;
   label: string; value: string; onChange: (v: string) => void;
   type?: string; placeholder?: string; error?: string; rows?: number;
 }) {
@@ -27,17 +33,17 @@ function Field({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      <label style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "rgba(255,255,255,0.6)" }}>
+      <label htmlFor={id} style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "rgba(255,255,255,0.6)" }}>
         {label}
       </label>
       {rows ? (
-        <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
+        <textarea id={id} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
           style={{ ...base, padding: "11px 14px", resize: "vertical" }}
           onFocus={e => { e.target.style.borderColor = focusBorder; e.target.style.boxShadow = shadow; }}
           onBlur={e => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = "none"; }}
         />
       ) : (
-        <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        <input id={id} type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
           style={{ ...base, padding: "11px 14px" }}
           onFocus={e => { e.target.style.borderColor = focusBorder; e.target.style.boxShadow = shadow; }}
           onBlur={e => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = "none"; }}
@@ -52,30 +58,18 @@ function Field({
   );
 }
 
-/* ── hCaptcha placeholder ── */
-function HCaptchaPlaceholder({ checked, onCheck }: { checked: boolean; onCheck: () => void }) {
-  return (
-    <div style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: "9px", padding: "14px 16px", background: "rgba(255,255,255,0.025)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <button
-          type="button"
-          onClick={onCheck}
-          style={{ width: "22px", height: "22px", borderRadius: "4px", border: `2px solid ${checked ? "#5046e5" : "rgba(255,255,255,0.25)"}`, background: checked ? "#5046e5" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.15s" }}
-        >
-          {checked && <Check size={13} color="#fff" strokeWidth={3} />}
-        </button>
-        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.65)" }}>
-          I&apos;m not a robot
-        </span>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
-        <div style={{ width: "32px", height: "32px", borderRadius: "6px", background: "rgba(80,70,229,0.2)", border: "1px solid rgba(80,70,229,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.65rem", color: "#a5b4fc", fontWeight: 700 }}>hC</span>
-        </div>
-        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.58rem", color: "rgba(255,255,255,0.25)", letterSpacing: "0.02em" }}>hCaptcha</span>
-      </div>
-    </div>
-  );
+function extractErrorMessage(err: unknown): string {
+  if (err instanceof AxiosError) {
+    const detail = (err.response?.data as { detail?: string })?.detail;
+    if (typeof detail === "string" && detail.length > 0) {
+      return detail;
+    }
+    return err.message || "Something went wrong on our end. Please try again in a moment.";
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return "Something went wrong on our end. Please try again in a moment.";
 }
 
 /* ── success card ── */
@@ -186,45 +180,75 @@ function ContactInfo() {
 }
 
 /* ── contact form ── */
-function ContactForm() {
+export function ContactForm() {
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "";
   const [name, setName]       = useState("");
   const [email, setEmail]     = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [captcha, setCaptcha] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
   const [errors, setErrors]   = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
-  const validate = () => {
-    const e: Record<string, string> = {};
-    if (!name.trim())          e.name    = "Please enter your name.";
-    if (!email.includes("@"))  e.email   = "Enter a valid email address.";
-    if (!subject.trim())       e.subject = "Please enter a subject.";
-    if (message.trim().length < 20) e.message = "Message must be at least 20 characters.";
-    if (!captcha)              e.captcha = "Please confirm you're not a robot.";
-    return e;
+  const resetForm = () => {
+    setName("");
+    setEmail("");
+    setSubject("");
+    setMessage("");
+    setCaptchaToken("");
+    setErrors({});
+    setServerError("");
+    turnstileRef.current?.reset();
   };
+
+  const contactMutation = useMutation({
+    mutationFn: submitContactForm,
+    onSuccess: () => {
+      setSuccess(true);
+      resetForm();
+    },
+    onError: (err: unknown) => {
+      setServerError(extractErrorMessage(err));
+      setCaptchaToken("");
+      turnstileRef.current?.reset();
+    },
+  });
 
   const submit = () => {
     setServerError("");
-    const e = validate();
-    setErrors(e);
-    if (Object.keys(e).length) return;
+    const validationErrors = validateContactForm({
+      name,
+      email,
+      subject,
+      message,
+      captchaToken,
+    });
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length) return;
 
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      if (Math.random() < 0.15) {
-        setServerError("Something went wrong on our end. Please try again in a moment.");
-      } else {
-        setSuccess(true);
-      }
-    }, 1400);
+    contactMutation.mutate({
+      name: name.trim(),
+      email: email.trim(),
+      subject: subject.trim(),
+      message: message.trim(),
+      captcha_token: captchaToken,
+    });
   };
 
-  if (success) return <SuccessCard onReset={() => { setSuccess(false); setName(""); setEmail(""); setSubject(""); setMessage(""); setCaptcha(false); }} />;
+  const loading = contactMutation.isPending;
+
+  if (success) {
+    return (
+      <SuccessCard
+        onReset={() => {
+          setSuccess(false);
+          resetForm();
+        }}
+      />
+    );
+  }
 
   return (
     <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "16px", padding: "32px" }}>
@@ -237,15 +261,28 @@ function ContactForm() {
         )}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-          <Field label="Name" value={name} onChange={setName} placeholder="Ada Lovelace" error={errors.name} />
-          <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" error={errors.email} />
+          <Field id="contact-name" label="Name" value={name} onChange={setName} placeholder="Ada Lovelace" error={errors.name} />
+          <Field id="contact-email" label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" error={errors.email} />
         </div>
 
-        <Field label="Subject" value={subject} onChange={setSubject} placeholder="Internship opportunity / Collaboration / Feedback…" error={errors.subject} />
-        <Field label="Message" value={message} onChange={setMessage} placeholder="Tell me what's on your mind. The more detail the better — I read everything." rows={6} error={errors.message} />
+        <Field id="contact-subject" label="Subject" value={subject} onChange={setSubject} placeholder="Internship opportunity / Collaboration / Feedback…" error={errors.subject} />
+        <Field id="contact-message" label="Message" value={message} onChange={setMessage} placeholder="Tell me what's on your mind. The more detail the better — I read everything." rows={6} error={errors.message} />
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <HCaptchaPlaceholder checked={captcha} onCheck={() => setCaptcha(c => !c)} />
+          {turnstileSiteKey ? (
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={turnstileSiteKey}
+              onSuccess={setCaptchaToken}
+              onExpire={() => setCaptchaToken("")}
+              onError={() => setCaptchaToken("")}
+              options={{ theme: "dark" }}
+            />
+          ) : (
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "#f87171", margin: 0 }}>
+              Turnstile is not configured. Set VITE_TURNSTILE_SITE_KEY.
+            </p>
+          )}
           {errors.captcha && (
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", color: "#f87171", margin: 0, display: "flex", alignItems: "center", gap: "4px" }}>
               <AlertCircle size={11} />{errors.captcha}
@@ -255,10 +292,10 @@ function ContactForm() {
 
         <button
           onClick={submit}
-          disabled={loading}
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "13px", background: loading ? "rgba(80,70,229,0.6)" : "#5046e5", color: "#fff", fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", fontWeight: 600, border: "none", borderRadius: "10px", cursor: loading ? "default" : "pointer", transition: "background 0.15s, transform 0.1s" }}
-          onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = "#4338ca"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
-          onMouseLeave={e => { if (!loading) { e.currentTarget.style.background = "#5046e5"; e.currentTarget.style.transform = "none"; } }}
+          disabled={loading || !captchaToken}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "13px", background: loading || !captchaToken ? "rgba(80,70,229,0.6)" : "#5046e5", color: "#fff", fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", fontWeight: 600, border: "none", borderRadius: "10px", cursor: loading || !captchaToken ? "default" : "pointer", transition: "background 0.15s, transform 0.1s" }}
+          onMouseEnter={e => { if (!loading && captchaToken) { e.currentTarget.style.background = "#4338ca"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
+          onMouseLeave={e => { if (!loading && captchaToken) { e.currentTarget.style.background = "#5046e5"; e.currentTarget.style.transform = "none"; } }}
         >
           {loading ? <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} /> : <Send size={15} />}
           {loading ? "Sending…" : "Send Message"}
