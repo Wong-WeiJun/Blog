@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 import resend
 
 from app.core.config import settings
@@ -6,6 +6,7 @@ from app.models import ContactSubmission, ContactRequest
 from app.api.deps import (
     SessionDep,
 )
+from app.services.captcha import verify_turnstile_token
 
 router = APIRouter(tags=["contact"])
 
@@ -52,12 +53,21 @@ def send_contact_notification(submission: ContactSubmission) -> bool:
 
 
 @router.post("", status_code=status.HTTP_200_OK)
-def submit_contact_form(payload: ContactRequest, session: SessionDep):
+def submit_contact_form(
+    payload: ContactRequest, session: SessionDep, request: Request
+):
     """
     Public endpoint to accept contact form submissions.
     Saves the record to the database first, attempts to email the admin,
     and updates the email_sent status flag accordingly.
     """
+    remote_ip = request.client.host if request.client else None
+    if not verify_turnstile_token(payload.captcha_token, remote_ip):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Captcha verification failed. Please try again.",
+        )
+
     db_submission = ContactSubmission(
         name=payload.name,
         email=payload.email,
