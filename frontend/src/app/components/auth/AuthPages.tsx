@@ -352,8 +352,7 @@ function ResetPage({ onSwitch }: NavProps) {
       setError("Please enter a valid email address.");
       return;
     }
-    recoverPassword(email);
-    setSuccess(true);
+    recoverPassword(email, { onSuccess: () => setSuccess(true) });
   };
 
   if (success) {
