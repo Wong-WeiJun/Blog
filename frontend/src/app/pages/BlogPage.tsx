@@ -1,6 +1,10 @@
 import { PostGrid } from "../components/PostGrid";
+import { useSearchParams } from "react-router";
 
 export function BlogPage() {
+  const [searchParams] = useSearchParams();
+  const initialTag = searchParams.get("tag") ?? "All";
+
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-16">
       <header style={{ marginBottom: "36px" }}>
@@ -14,7 +18,7 @@ export function BlogPage() {
           Infrastructure notes, cloud patterns, and lessons from the homelab.
         </p>
       </header>
-      <PostGrid />
+      <PostGrid initialTag={initialTag} />
     </main>
   );
 }
