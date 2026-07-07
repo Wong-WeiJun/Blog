@@ -1387,6 +1387,14 @@ export type PostsReadPostsData = {
          */
         search?: string | null;
         /**
+         * Featured
+         */
+        featured?: boolean | null;
+        /**
+         * Sort By
+         */
+        sort_by?: 'published_at' | 'view_count';
+        /**
          * Page
          */
         page?: number;
