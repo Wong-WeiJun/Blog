@@ -28,7 +28,7 @@ export function BlogPost({ post }: { post: PostResponse }) {
       {/* Back nav */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/blog")}
           style={{ display: "flex", alignItems: "center", gap: "7px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500, color: "rgba(255,255,255,0.5)", background: "transparent", border: "none", cursor: "pointer", padding: 0, transition: "color 0.15s" }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}

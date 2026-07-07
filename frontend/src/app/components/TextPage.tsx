@@ -298,7 +298,7 @@ export function TextPage() {
         }}
       >
         <Link
-          to="/"
+          to="/blog"
           style={{
             display: "flex",
             alignItems: "center",

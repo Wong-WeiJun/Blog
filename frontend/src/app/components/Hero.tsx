@@ -34,7 +34,7 @@ export function Hero() {
           {/* CTAs */}
           <div className="flex flex-wrap gap-4 mt-2">
             <Link
-              to="/"
+              to="/blog"
               style={{ background: "#5046e5", color: "#fff", fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", fontWeight: 600, padding: "12px 24px", borderRadius: "10px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "8px", transition: "background 0.15s, transform 0.1s" }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "#4338ca"; e.currentTarget.style.transform = "translateY(-1px)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "#5046e5"; e.currentTarget.style.transform = "none"; }}

@@ -30,7 +30,7 @@ export function Footer() {
             </h4>
             <nav className="flex flex-col gap-3">
               {[
-                { label: "Blog", path: "/" },
+                { label: "Blog", path: "/blog" },
                 { label: "Projects", path: "/projects" },
                 { label: "About", path: "/about" },
                 { label: "Contact", path: "/contact" },

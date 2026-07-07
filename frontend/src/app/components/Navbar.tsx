@@ -101,7 +101,7 @@ export function Navbar() {
   const navigate = useNavigate();
 
   const navLinks = [
-    { label: "Blog", path: "/" },
+    { label: "Blog", path: "/blog" },
     { label: "Projects", path: "/projects" },
     { label: "About", path: "/about" },
     { label: "Contact", path: "/contact" },

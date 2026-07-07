@@ -125,7 +125,7 @@ export function TagArchivePage() {
         }}
       >
         <Link
-          to="/"
+          to="/blog"
           style={{
             display: "flex",
             alignItems: "center",

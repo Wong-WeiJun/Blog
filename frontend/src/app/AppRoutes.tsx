@@ -3,6 +3,7 @@ import { AuthProvider } from "../lib/auth-context";
 import { useAuth } from "../lib/auth-context";
 import { Layout } from "./components/Layout";
 import { HomePage } from "./pages/HomePage";
+import { BlogPage } from "./pages/BlogPage";
 import { BlogPostPage } from "./pages/BlogPostPage";
 import { TagArchivePage } from "./components/TagArchivePage";
 import { NotFoundPage } from "./components/NotFoundPage";
@@ -36,6 +37,7 @@ export function AppRoutes() {
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<HomePage />} />
+            <Route path="blog" element={<BlogPage />} />
             <Route path="blog/:slug" element={<BlogPostPage />} />
             <Route path="tag/:tag" element={<TagArchivePage />} />
             <Route path="about" element={<AboutPage />} />
