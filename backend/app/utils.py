@@ -11,6 +11,7 @@ from jwt.exceptions import InvalidTokenError
 
 from app.core import security
 from app.core.config import settings
+from app.services.email import send_transactional_email
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,7 +37,20 @@ def send_email(
     subject: str = "",
     html_content: str = "",
 ) -> None:
-    assert settings.emails_enabled, "no provided configuration for email variables"
+    if settings.resend_enabled:
+        send_transactional_email(
+            email_to=email_to,
+            subject=subject,
+            html_content=html_content,
+        )
+        return
+
+    if not settings.emails_enabled:
+        raise RuntimeError(
+            "No email provider configured. Set RESEND_KEY and FROM_EMAIL, "
+            "or configure SMTP_HOST and EMAILS_FROM_EMAIL."
+        )
+
     message = emails.Message(
         subject=subject,
         html=html_content,
