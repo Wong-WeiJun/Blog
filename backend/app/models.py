@@ -302,3 +302,4 @@ class ContactRequest(SQLModel):
     email: EmailStr
     subject: str
     message: str
+    captcha_token: str
