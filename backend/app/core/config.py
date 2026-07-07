@@ -135,5 +135,10 @@ class Settings(BaseSettings):
     CONTACT_EMAIL: str | None = None
     TURNSTILE_SECRET_KEY: str | None = None
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def resend_enabled(self) -> bool:
+        return bool(self.RESEND_KEY and self.FROM_EMAIL)
+
 
 settings = Settings()  # type: ignore
