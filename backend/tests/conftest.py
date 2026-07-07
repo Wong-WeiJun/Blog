@@ -10,6 +10,7 @@ from app.main import app
 from app.models import (
     Comment,
     CommentLike,
+    ContactSubmission,
     Post,
     PostTagLink,
     User,
@@ -25,6 +26,7 @@ def db() -> Generator[Session, None, None]:
         yield session
         session.execute(delete(CommentLike))  # references Comment
         session.execute(delete(Comment))  # references Post + User
+        session.execute(delete(ContactSubmission))
         session.execute(delete(PostTagLink))  # references Post + Tag
         session.execute(delete(Post))  # references User
         session.execute(delete(User))
