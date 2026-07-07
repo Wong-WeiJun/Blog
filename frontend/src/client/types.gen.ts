@@ -108,6 +108,32 @@ export type CommentResponse = {
 };
 
 /**
+ * ContactRequest
+ */
+export type ContactRequest = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Subject
+     */
+    subject: string;
+    /**
+     * Message
+     */
+    message: string;
+    /**
+     * Captcha Token
+     */
+    captcha_token: string;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -1528,6 +1554,29 @@ export type CommentsDeleteCommentResponses = {
 };
 
 export type CommentsDeleteCommentResponse = CommentsDeleteCommentResponses[keyof CommentsDeleteCommentResponses];
+
+export type ContactSubmitContactFormData = {
+    body: ContactRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/contact';
+};
+
+export type ContactSubmitContactFormErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ContactSubmitContactFormError = ContactSubmitContactFormErrors[keyof ContactSubmitContactFormErrors];
+
+export type ContactSubmitContactFormResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type PrivateCreateUserData = {
     body: PrivateUserCreate;
