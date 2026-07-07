@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { Github, Twitter, Linkedin, Mail, Rss } from "lucide-react";
-import { BRAND_DOMAIN, BRAND_HANDLE, BRAND_GITHUB, BRAND_TWITTER, BRAND_EMAIL, COPYRIGHT_YEAR } from "../../lib/constants";
+import { BRAND_DOMAIN, BRAND_HANDLE, BRAND_GITHUB, BRAND_TWITTER, BRAND_EMAIL, COPYRIGHT_YEAR, RSS_FEED_URL } from "../../lib/constants";
 
 export function Footer() {
   return (
@@ -35,9 +35,22 @@ export function Footer() {
                 { label: "About", path: "/about" },
                 { label: "Contact", path: "/contact" },
                 { label: "Privacy", path: "/legal" },
-                { label: "RSS Feed", path: null },
+                { label: "RSS Feed", href: RSS_FEED_URL, icon: true },
               ].map((item) => (
-                item.path ? (
+                "href" in item ? (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    type="application/rss+xml"
+                    rel="alternate"
+                    style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.5)", textDecoration: "none", transition: "color 0.15s", display: "flex", alignItems: "center", gap: "6px" }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = "#fff"}
+                    onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+                  >
+                    {item.icon ? <Rss size={13} /> : null}
+                    {item.label}
+                  </a>
+                ) : (
                   <Link
                     key={item.label}
                     to={item.path}
@@ -47,17 +60,6 @@ export function Footer() {
                   >
                     {item.label}
                   </Link>
-                ) : (
-                  <span
-                    key={item.label}
-                    style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", gap: "6px", cursor: "default" }}
-                  >
-                    <Rss size={13} />
-                    {item.label}
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.6rem", color: "rgba(255,255,255,0.25)", marginLeft: "4px" }}>
-                      (soon)
-                    </span>
-                  </span>
                 )
               ))}
             </nav>
