@@ -133,6 +133,7 @@ class Settings(BaseSettings):
     RESEND_KEY: str | None = None
     FROM_EMAIL: str | None = None
     CONTACT_EMAIL: str | None = None
+    TURNSTILE_SECRET_KEY: str | None = None
 
 
 settings = Settings()  # type: ignore
