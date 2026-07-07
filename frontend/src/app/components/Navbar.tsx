@@ -110,7 +110,7 @@ export function Navbar() {
   return (
     <nav
       style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
-      className="sticky top-0 z-50 w-full"
+      className="sticky top-0 z-[100] w-full"
     >
       <div
         style={{ background: "rgba(10,12,26,0.85)", backdropFilter: "blur(12px)" }}
