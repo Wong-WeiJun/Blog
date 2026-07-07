@@ -43,4 +43,13 @@ export default defineConfig({
       },
     },
   },
+
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    globals: true,
+    env: {
+      VITE_TURNSTILE_SITE_KEY: 'test-site-key',
+    },
+  },
 })
