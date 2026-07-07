@@ -487,6 +487,178 @@ export type PrivateUserCreate = {
 };
 
 /**
+ * ProjectCreate
+ */
+export type ProjectCreate = {
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Stack
+     */
+    stack?: Array<string>;
+    status?: ProjectStatus;
+    /**
+     * Stars
+     */
+    stars?: number;
+    /**
+     * Forks
+     */
+    forks?: number;
+    /**
+     * Github Url
+     */
+    github_url?: string | null;
+    /**
+     * Live Url
+     */
+    live_url?: string | null;
+    /**
+     * Accent
+     */
+    accent?: string;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Sort Order
+     */
+    sort_order?: number;
+};
+
+/**
+ * ProjectResponse
+ */
+export type ProjectResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Stack
+     */
+    stack: Array<string>;
+    status: ProjectStatus;
+    /**
+     * Stars
+     */
+    stars: number;
+    /**
+     * Forks
+     */
+    forks: number;
+    /**
+     * Github Url
+     */
+    github_url: string | null;
+    /**
+     * Live Url
+     */
+    live_url: string | null;
+    /**
+     * Accent
+     */
+    accent: string;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Sort Order
+     */
+    sort_order: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+};
+
+/**
+ * ProjectStatus
+ */
+export type ProjectStatus = 'completed' | 'in_progress' | 'archived';
+
+/**
+ * ProjectUpdate
+ */
+export type ProjectUpdate = {
+    /**
+     * Title
+     */
+    title?: string | null;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Stack
+     */
+    stack?: Array<string> | null;
+    status?: ProjectStatus | null;
+    /**
+     * Stars
+     */
+    stars?: number | null;
+    /**
+     * Forks
+     */
+    forks?: number | null;
+    /**
+     * Github Url
+     */
+    github_url?: string | null;
+    /**
+     * Live Url
+     */
+    live_url?: string | null;
+    /**
+     * Accent
+     */
+    accent?: string | null;
+    /**
+     * Category
+     */
+    category?: string | null;
+    /**
+     * Sort Order
+     */
+    sort_order?: number | null;
+};
+
+/**
+ * TagCreate
+ */
+export type TagCreate = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Color
+     */
+    color?: string;
+};
+
+/**
  * TagResponse
  */
 export type TagResponse = {
@@ -1493,6 +1665,163 @@ export type TagsGetTagsResponses = {
 };
 
 export type TagsGetTagsResponse = TagsGetTagsResponses[keyof TagsGetTagsResponses];
+
+export type TagsCreateTagData = {
+    body: TagCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/tags';
+};
+
+export type TagsCreateTagErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TagsCreateTagError = TagsCreateTagErrors[keyof TagsCreateTagErrors];
+
+export type TagsCreateTagResponses = {
+    /**
+     * Successful Response
+     */
+    200: TagWithCountResponse;
+};
+
+export type TagsCreateTagResponse = TagsCreateTagResponses[keyof TagsCreateTagResponses];
+
+export type TagsDeleteTagData = {
+    body?: never;
+    path: {
+        /**
+         * Tag Id
+         */
+        tag_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tags/{tag_id}';
+};
+
+export type TagsDeleteTagErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TagsDeleteTagError = TagsDeleteTagErrors[keyof TagsDeleteTagErrors];
+
+export type TagsDeleteTagResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type TagsDeleteTagResponse = TagsDeleteTagResponses[keyof TagsDeleteTagResponses];
+
+export type ProjectsGetProjectsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/projects';
+};
+
+export type ProjectsGetProjectsResponses = {
+    /**
+     * Response Projects-Get Projects
+     * Successful Response
+     */
+    200: Array<ProjectResponse>;
+};
+
+export type ProjectsGetProjectsResponse = ProjectsGetProjectsResponses[keyof ProjectsGetProjectsResponses];
+
+export type ProjectsCreateProjectData = {
+    body: ProjectCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/projects';
+};
+
+export type ProjectsCreateProjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ProjectsCreateProjectError = ProjectsCreateProjectErrors[keyof ProjectsCreateProjectErrors];
+
+export type ProjectsCreateProjectResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProjectResponse;
+};
+
+export type ProjectsCreateProjectResponse = ProjectsCreateProjectResponses[keyof ProjectsCreateProjectResponses];
+
+export type ProjectsDeleteProjectData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}';
+};
+
+export type ProjectsDeleteProjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ProjectsDeleteProjectError = ProjectsDeleteProjectErrors[keyof ProjectsDeleteProjectErrors];
+
+export type ProjectsDeleteProjectResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type ProjectsDeleteProjectResponse = ProjectsDeleteProjectResponses[keyof ProjectsDeleteProjectResponses];
+
+export type ProjectsUpdateProjectData = {
+    body: ProjectUpdate;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}';
+};
+
+export type ProjectsUpdateProjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ProjectsUpdateProjectError = ProjectsUpdateProjectErrors[keyof ProjectsUpdateProjectErrors];
+
+export type ProjectsUpdateProjectResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProjectResponse;
+};
+
+export type ProjectsUpdateProjectResponse = ProjectsUpdateProjectResponses[keyof ProjectsUpdateProjectResponses];
 
 export type CommentsGetPostCommentsData = {
     body?: never;
