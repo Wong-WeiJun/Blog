@@ -5,3 +5,6 @@ export const BRAND_HANDLE = "wongweijun";
 export const BRAND_GITHUB = "Wong-WeiJun";
 export const BRAND_TWITTER = "@wongweijun";
 export const COPYRIGHT_YEAR = new Date().getFullYear();
+
+const apiBase = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+export const RSS_FEED_URL = apiBase ? `${apiBase}/api/v1/feed.xml` : "/api/v1/feed.xml";
