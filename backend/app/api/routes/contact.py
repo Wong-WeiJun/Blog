@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Request, status
-import resend
 
 from app.core.config import settings
 from app.models import ContactSubmission, ContactRequest
@@ -7,32 +6,21 @@ from app.api.deps import (
     SessionDep,
 )
 from app.services.captcha import verify_turnstile_token
+from app.services.email import send_contact_notification_email
 
 router = APIRouter(tags=["contact"])
 
 
-def _init_resend() -> bool:
-    if hasattr(settings, "RESEND_KEY") and settings.RESEND_KEY:
-        resend.api_key = settings.RESEND_KEY
-        return True
-    return False
-
-
 def send_contact_notification(submission: ContactSubmission) -> bool:
-    if not _init_resend():
-        return False
-
     admin_email = getattr(settings, "CONTACT_EMAIL", "admin@wongweijun.me")
     from_email = getattr(settings, "FROM_EMAIL", "Contact Form <noreply@wongweijun.me>")
 
-    try:
-        resend.Emails.send(
-            {
-                "from": from_email,
-                "to": admin_email,
-                "reply_to": submission.email,
-                "subject": f"[Contact Form] {submission.subject}",
-                "html": f"""
+    return send_contact_notification_email(
+        admin_email=admin_email,
+        from_email=from_email,
+        reply_to=submission.email,
+        subject=f"[Contact Form] {submission.subject}",
+        html=f"""
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                     <h2 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">New Contact Submission</h2>
                     <p><strong>Name:</strong> {submission.name}</p>
@@ -45,11 +33,7 @@ def send_contact_notification(submission: ContactSubmission) -> bool:
                     </div>
                 </div>
                 """,
-            }
-        )
-        return True
-    except Exception:
-        return False
+    )
 
 
 @router.post("", status_code=status.HTTP_200_OK)
