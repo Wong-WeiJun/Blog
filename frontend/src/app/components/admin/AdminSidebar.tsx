@@ -3,16 +3,17 @@ import { Fragment } from "react";
 import { useNavigate } from "react-router";
 import {
   LayoutDashboard, FileText, MessageSquare, Tag, BarChart2,
-  ExternalLink, UserCircle,
+  ExternalLink, UserCircle, FolderGit2,
 } from "lucide-react";
 import { BRAND_NAME, BRAND_DOMAIN } from "../../../lib/constants";
 import { useAuth } from "../../../lib/auth-context";
 
-export type AdminView = "overview" | "posts" | "comments" | "tags" | "analytics" | "profile";
+export type AdminView = "overview" | "posts" | "projects" | "comments" | "tags" | "analytics" | "profile";
 
 const NAV_ITEMS: { id: AdminView; label: string; icon: ReactNode; badge?: number; dividerBefore?: boolean }[] = [
   { id: "overview",   label: "Overview",  icon: <LayoutDashboard size={16} /> },
   { id: "posts",      label: "Posts",     icon: <FileText size={16} />,       badge: 0 },
+  { id: "projects",   label: "Projects",  icon: <FolderGit2 size={16} /> },
   { id: "comments",   label: "Comments",  icon: <MessageSquare size={16} />,  badge: 0 },
   { id: "tags",       label: "Tags",      icon: <Tag size={16} /> },
   { id: "analytics",  label: "Analytics", icon: <BarChart2 size={16} /> },

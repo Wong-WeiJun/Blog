@@ -5,10 +5,11 @@ import { AdminTopBar } from "./AdminTopBar";
 import { OverviewView } from "./OverviewView";
 import { PostsView } from "./PostsView";
 import { AdminProfileView } from "./AdminProfileView";
-import { PlaceholderView } from "./PlaceholderView";
 import { PostEditor } from "./PostEditor";
 import { CommentsView } from "./CommentsView";
 import { AnalyticsView } from "./AnalyticsView";
+import { TagsView } from "./TagsView";
+import { ProjectsView } from "./ProjectsView";
 import { useState } from "react";
 import type { PostResponse } from "@/client/types.gen";
 
@@ -20,6 +21,7 @@ export function AdminDashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [editorOpen, setEditorOpen]             = useState(false);
   const [editingPost, setEditingPost]           = useState<PostResponse | null>(null);
+  const [newProjectTrigger, setNewProjectTrigger] = useState(0);
 
   const handleNavigate = (v: AdminView) => { setView(v); setSearch(""); };
   const handleExit     = () => navigate("/");
@@ -27,6 +29,7 @@ export function AdminDashboard() {
 
   const openNewPost  = () => { setEditingPost(null); setEditorOpen(true); };
   const openEditPost = (post: PostResponse) => { setEditingPost(post); setEditorOpen(true); };
+  const openNewProject = () => setNewProjectTrigger((n) => n + 1);
   const closeEditor  = () => { setEditorOpen(false); setEditingPost(null); };
   const handlePublished = () => { closeEditor(); setView("posts"); };
 
@@ -44,6 +47,7 @@ export function AdminDashboard() {
           search={search}
           onSearch={setSearch}
           onNewPost={openNewPost}
+          onNewProject={openNewProject}
           collapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed((c) => !c)}
         />
@@ -75,9 +79,10 @@ export function AdminDashboard() {
 
           {view === "overview"  && <OverviewView />}
           {view === "posts"     && <PostsView search={search} onEditPost={openEditPost} onNewPost={openNewPost} />}
+          {view === "projects"  && <ProjectsView search={search} newProjectTrigger={newProjectTrigger} />}
           {view === "profile"   && <AdminProfileView />}
           {view === "comments"  && <CommentsView />}
-          {view === "tags"      && <PlaceholderView label="Tags" />}
+          {view === "tags"      && <TagsView />}
           {view === "analytics" && <AnalyticsView />}
         </main>
       </div>
