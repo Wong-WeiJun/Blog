@@ -18,6 +18,8 @@ FEED_LIMIT = 50
 def _format_rfc822(dt: datetime) -> str:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
     return format_datetime(dt, usegmt=True)
 
 
