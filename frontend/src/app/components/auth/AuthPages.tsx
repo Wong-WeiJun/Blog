@@ -174,7 +174,7 @@ function LoginPage({ onSwitch }: NavProps) {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
-  const { login, isLoggingIn }  = useAuth();
+  const { login, isLoggingIn, loginError } = useAuth();
 
   const submit = () => {
     setError("");
@@ -183,7 +183,7 @@ function LoginPage({ onSwitch }: NavProps) {
     login(email, password);
   };
 
-  const hasError = !!error;
+  const hasError = !!error || !!loginError;
 
   return (
     <Card>
@@ -195,7 +195,10 @@ function LoginPage({ onSwitch }: NavProps) {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {hasError && <ErrorBanner message={error} />}
+        {error && <ErrorBanner message={error} />}
+        {loginError && (
+          <ErrorBanner message="Incorrect email or password" />
+        )}
 
         <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" error={hasError} autoComplete="email" />
         <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="••••••••" error={hasError} autoComplete="current-password" />
