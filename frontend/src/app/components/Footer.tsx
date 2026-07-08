@@ -72,21 +72,39 @@ export function Footer() {
             </h4>
             <div className="flex flex-col gap-3">
               {[
-                { icon: <Github size={15} />, label: "GitHub", handle: BRAND_GITHUB },
-                { icon: <Twitter size={15} />, label: "Twitter", handle: BRAND_TWITTER },
-                { icon: <Linkedin size={15} />, label: "LinkedIn", handle: BRAND_HANDLE },
-                { icon: <Mail size={15} />, label: "Email", handle: BRAND_EMAIL },
+                // Note: Adjust the template literals below if your constants are already full URLs
+                { icon: <Github size={15} />, label: "GitHub", handle: BRAND_GITHUB, url: `https://github.com/${BRAND_GITHUB}` },
+                { icon: <Twitter size={15} />, label: "Twitter", handle: BRAND_TWITTER, url: `https://twitter.com/SakaiWJWong` },
+                { icon: <Linkedin size={15} />, label: "LinkedIn", handle: BRAND_HANDLE, url: `https://www.linkedin.com/in/wei-jun-wong-507069357/` },
+                { icon: <Mail size={15} />, label: "Email", handle: BRAND_EMAIL, url: `mailto:${BRAND_EMAIL}` },
               ].map((item) => (
-                <div
+                <a
                   key={item.label}
-                  title="Coming soon"
-                  style={{ display: "flex", alignItems: "center", gap: "10px", opacity: 0.4, pointerEvents: "none" }}
+                  href={item.url}
+                  target={item.label === "Email" ? "_self" : "_blank"} // mailto links don't need a new tab
+                  rel={item.label === "Email" ? undefined : "noopener noreferrer"}
+                  style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "10px", 
+                    textDecoration: "none",
+                    opacity: 0.75, // Starting opacity (no longer looks disabled)
+                    transition: "all 0.2s ease" 
+                  }}
+                  onMouseEnter={(e) => { 
+                    e.currentTarget.style.opacity = "1";
+                    e.currentTarget.style.transform = "translateX(4px)"; // Slight slide effect on hover
+                  }}
+                  onMouseLeave={(e) => { 
+                    e.currentTarget.style.opacity = "0.75";
+                    e.currentTarget.style.transform = "none";
+                  }}
                 >
-                  <span style={{ color: "rgba(165,180,252,0.6)" }}>{item.icon}</span>
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.5)" }}>
+                  <span style={{ color: "rgba(165,180,252,0.8)", display: "flex" }}>{item.icon}</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "#fff" }}>
                     {item.handle}
                   </span>
-                </div>
+                </a>
               ))}
             </div>
           </div>
