@@ -1,17 +1,24 @@
 import { AxiosError } from "axios";
 
 function extractErrorMessage(err: unknown): string {
-  if (err instanceof AxiosError) {
-    const detail = (err.response?.data as any)?.detail;
-    if (Array.isArray(detail) && detail.length > 0) {
-      return detail[0].msg;
-    }
-    return detail || err.message || "Something went wrong.";
+  const axiosError = err as AxiosError;
+  let detail = (axiosError.response?.data as any)?.detail;
+  if (Array.isArray(detail) && detail.length > 0) {
+    return detail[0].msg || "Something went wrong.";
   }
-  if (err instanceof Error) {
-    return err.message;
+  if (typeof detail === "string" && detail.trim()) {
+    return detail;
   }
-  return "Something went wrong.";
+
+  const status = axiosError.response?.status;
+  if (status === 400 || status === 401) {
+    return "Incorrect email or password";
+  }
+
+  const message =
+    (err instanceof Error ? err.message : String(err)) ||
+    "Something went wrong.";
+  return message;
 }
 
 export const handleError = function (

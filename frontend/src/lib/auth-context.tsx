@@ -32,6 +32,7 @@ interface AuthContextValue {
   refreshUser: () => void;
   isLoading: boolean;
   isLoggingIn: boolean;
+  loginError: Error | null;
   isRegistering: boolean;
   isRecoveringPassword: boolean;
   isResettingPassword: boolean;
@@ -112,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshUser,
         isLoading: auth.isLoading,
         isLoggingIn: auth.loginMutation.isPending,
+        loginError: auth.loginMutation.error as Error | null,
         isRegistering: auth.signUpMutation.isPending,
         isRecoveringPassword: auth.recoverPasswordMutation.isPending,
         isResettingPassword: auth.resetPasswordMutation.isPending,
