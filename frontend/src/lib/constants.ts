@@ -1,9 +1,9 @@
 export const BRAND_NAME = "Wong Wei Jun";
 export const BRAND_DOMAIN = "wongweijun.me";
-export const BRAND_EMAIL = "hello@wongweijun.me";
-export const BRAND_HANDLE = "wongweijun";
+export const BRAND_EMAIL = "wong.weijun923@gmail.com";
+export const BRAND_HANDLE = "Wei Jun Wong";
 export const BRAND_GITHUB = "Wong-WeiJun";
-export const BRAND_TWITTER = "@wongweijun";
+export const BRAND_TWITTER = "@SakaiWJWong";
 export const COPYRIGHT_YEAR = new Date().getFullYear();
 
 const apiBase = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
