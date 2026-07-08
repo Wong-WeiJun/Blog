@@ -19,9 +19,7 @@ def _contact_payload(**overrides: str) -> dict[str, str]:
     return payload
 
 
-def test_submit_contact_form_success(
-    client: TestClient, db: Session
-) -> None:
+def test_submit_contact_form_success(client: TestClient, db: Session) -> None:
     with (
         patch(
             "app.api.routes.contact.verify_turnstile_token",
@@ -107,7 +105,9 @@ def test_submit_contact_form_email_send_failure(
     }
 
     submission = db.exec(
-        select(ContactSubmission).where(ContactSubmission.email == "failure@example.com")
+        select(ContactSubmission).where(
+            ContactSubmission.email == "failure@example.com"
+        )
     ).first()
     assert submission is not None
     assert submission.email_sent is False
