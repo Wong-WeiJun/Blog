@@ -61,7 +61,9 @@ class TestProjectsAuth:
 
 
 class TestProjectsCRUD:
-    def test_list_is_public(self, client: TestClient, superuser_token_headers: dict[str, str]):
+    def test_list_is_public(
+        self, client: TestClient, superuser_token_headers: dict[str, str]
+    ):
         r_create = client.post(BASE, json=SAMPLE, headers=superuser_token_headers)
         assert r_create.status_code == 200
 
@@ -92,7 +94,9 @@ class TestProjectsCRUD:
         assert r_update.json()["title"] == "InfraKit v2"
         assert r_update.json()["stars"] == 50
 
-        r_delete = client.delete(f"{BASE}/{project_id}", headers=superuser_token_headers)
+        r_delete = client.delete(
+            f"{BASE}/{project_id}", headers=superuser_token_headers
+        )
         assert r_delete.status_code == 200
 
         r_missing = client.put(
