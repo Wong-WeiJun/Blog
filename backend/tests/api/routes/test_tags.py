@@ -50,7 +50,9 @@ class TestTagsCRUD:
         assert r.status_code == 200
         assert isinstance(r.json(), list)
 
-    def test_create_tag(self, client: TestClient, superuser_token_headers: dict[str, str]):
+    def test_create_tag(
+        self, client: TestClient, superuser_token_headers: dict[str, str]
+    ):
         name = f"new-tag-{random_lower_string()[:6]}"
         r = client.post(
             BASE,
@@ -98,7 +100,9 @@ class TestTagsCRUD:
     ):
         author = create_random_user(db)
         tag = create_random_tag(db)
-        create_random_post(db, author, status=PostStatus.published, tag_names=[tag.name])
+        create_random_post(
+            db, author, status=PostStatus.published, tag_names=[tag.name]
+        )
 
         r = client.delete(f"{BASE}/{tag.id}", headers=superuser_token_headers)
         assert r.status_code == 409
