@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from enum import Enum
 
 from pydantic import ConfigDict, EmailStr, model_validator
-from sqlalchemy import Column, DateTime, JSON
+from sqlalchemy import JSON, Column, DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
 
