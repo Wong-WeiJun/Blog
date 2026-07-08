@@ -110,10 +110,11 @@ function ContactInfo() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // 1. ADD YOUR ACTUAL PROFILE URLS HERE 👇
   const links = [
-    { icon: <Github size={18} />, label: "GitHub" },
-    { icon: <Linkedin size={18} />, label: "LinkedIn" },
-    { icon: <Twitter size={18} />, label: "Twitter / X" },
+    { icon: <Github size={18} />, label: "GitHub", url: "https://github.com/Wong-WeiJun" },
+    { icon: <Linkedin size={18} />, label: "LinkedIn", url: "https://www.linkedin.com/in/wei-jun-wong-507069357/" },
+    { icon: <Twitter size={18} />, label: "Twitter / X", url: "https://twitter.com/SakaiWJWong" },
   ];
 
   return (
@@ -148,22 +149,47 @@ function ContactInfo() {
         </div>
       </div>
 
-      {/* Social links */}
+
+
+      {/* Social links (Now Active & Clickable) */}
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", fontWeight: 600, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>Elsewhere</p>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {links.map(l => (
-            <span
+            <a
               key={l.label}
-              title="Coming soon"
-              style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "9px", opacity: 0.45, pointerEvents: "none" }}
+              href={l.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "12px", 
+                padding: "12px 14px", 
+                background: "rgba(255,255,255,0.03)", 
+                border: "1px solid rgba(255,255,255,0.08)", 
+                borderRadius: "9px",
+                textDecoration: "none",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={(e) => { 
+                e.currentTarget.style.background = "rgba(255,255,255,0.07)"; 
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={(e) => { 
+                e.currentTarget.style.background = "rgba(255,255,255,0.03)"; 
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+                e.currentTarget.style.transform = "none";
+              }}
             >
-              <span style={{ color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>{l.icon}</span>
+              <span style={{ color: "#a5b4fc", flexShrink: 0, display: "flex" }}>{l.icon}</span>
               <div style={{ flex: 1 }}>
-                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "rgba(255,255,255,0.5)", margin: 0 }}>{l.label}</p>
-                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.2)", margin: 0 }}>Coming soon</p>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 600, color: "rgba(255,255,255,0.85)", margin: 0 }}>
+                  {l.label}
+                </p>
               </div>
-            </span>
+            </a>
           ))}
         </div>
       </div>
@@ -178,7 +204,6 @@ function ContactInfo() {
     </div>
   );
 }
-
 /* ── contact form ── */
 export function ContactForm() {
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "";
@@ -265,8 +290,8 @@ export function ContactForm() {
           <Field id="contact-email" label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" error={errors.email} />
         </div>
 
-        <Field id="contact-subject" label="Subject" value={subject} onChange={setSubject} placeholder="Internship opportunity / Collaboration / Feedback…" error={errors.subject} />
-        <Field id="contact-message" label="Message" value={message} onChange={setMessage} placeholder="Tell me what's on your mind. The more detail the better — I read everything." rows={6} error={errors.message} />
+        <Field id="contact-subject" label="Subject" value={subject} onChange={setSubject} placeholder="Subject" error={errors.subject} />
+        <Field id="contact-message" label="Message" value={message} onChange={setMessage} placeholder="Tell me what's on your mind :D" rows={6} error={errors.message} />
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {turnstileSiteKey ? (
