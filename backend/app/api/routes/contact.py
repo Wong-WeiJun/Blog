@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Request, status
 
-from app.core.config import settings
-from app.models import ContactSubmission, ContactRequest
 from app.api.deps import (
     SessionDep,
 )
+from app.core.config import settings
+from app.models import ContactRequest, ContactSubmission
 from app.services.captcha import verify_turnstile_token
 from app.services.email import send_contact_notification_email
 
@@ -37,9 +37,7 @@ def send_contact_notification(submission: ContactSubmission) -> bool:
 
 
 @router.post("", status_code=status.HTTP_200_OK)
-def submit_contact_form(
-    payload: ContactRequest, session: SessionDep, request: Request
-):
+def submit_contact_form(payload: ContactRequest, session: SessionDep, request: Request):
     """
     Public endpoint to accept contact form submissions.
     Saves the record to the database first, attempts to email the admin,
