@@ -1,13 +1,17 @@
-# FastSkeleton
+# BlogSite
 
-Personal fork of [fastapi/full-stack-fastapi-template](https://github.com/fastapi/full-stack-fastapi-template), cleaned up for solo projects and hackathons.
+A full-stack developer blog with a modern React frontend and a FastAPI backend. Features a public blog with an admin dashboard, RSS feeds, and content management.
+
+## Overview
+
+BlogSite is a complete blogging platform built with a React SPA frontend and a FastAPI backend. It supports public blog browsing, an admin dashboard, RSS feeds, and email subscriptions. All routing, auth, and content management are fully functional.
 
 ## Stack
 
 | Layer | Tech |
 |-------|------|
 | Backend | FastAPI, SQLModel, Alembic, PostgreSQL |
-| Frontend | React 19, TanStack Router/Query/Table, shadcn/ui, Tailwind v4 |
+| Frontend | React 18, Vite, Tailwind CSS v4, shadcn/ui |
 | Auth | JWT (PyJWT + pwdlib argon2) |
 | Dev | Docker Compose, uv, bun |
 | CI | GitHub Actions (ci, deploy, pre-commit) |
@@ -16,33 +20,83 @@ Personal fork of [fastapi/full-stack-fastapi-template](https://github.com/fastap
 
 ```bash
 # 1. Clone and set up env
-git clone <your-repo>
-make env          # copies .env.example → .env, then fill in your values
+#    Copy .env.example -> .env and fill in your values
+cp .env.example .env
 
 # 2. Start the full stack
 make dev
 
 # 3. Open
-#   API docs:  http://localhost:8000/docs
 #   Frontend:  http://localhost:5173
-#   Adminer:   http://localhost:8080
+#   API docs:   http://localhost:8000/docs
+#   Adminer:    http://localhost:8080
 ```
 
-## Common commands
+## Features
+
+### Public Blog
+- **Homepage**: Hero, featured post, and responsive post grid.
+- **Blog Posts**: Full articles with sticky table of contents, reading progress bar, and syntax-highlighted code blocks.
+- **Comments**: Comment sections on blog posts.
+- **Pages**: About, Contact, Projects.
+- **RSS Feed**: `/feed.xml` endpoint for subscribing to new posts.
+- **Dark Theme**: Deep navy aesthetic with brand purple accents.
+
+### Admin Dashboard
+- **Overview**: Dashboard with key metrics and charts (Recharts).
+- **Posts**: Create, edit, and manage blog posts.
+- **Analytics**: Data visualization.
+- **Comment Moderation**: Review and manage comments.
+
+### Backend API
+- **Blog Posts**: CRUD with publishing and drafts.
+- **RSS Feed**: Automatic RSS generation for published posts.
+- **Contact Form**: Email submissions stored in the database.
+- **Uploads**: Image uploads for post covers and avatars with S3/MinIO.
+- **User Management**: Registration, login, and profile management.
+- **Email**: Mailcatcher for local email testing.
+
+## Project Structure
+
+```
+.
+├── backend/          # FastAPI backend
+│   ├── app/
+│   │   ├── api/      # API routes (posts, feed, contact, uploads, users)
+│   │   ├── crud.py   # Database operations
+│   │   ├── models.py # SQLModel models
+│   │   └── core/     # Config, security, db
+│   └── tests/
+├── frontend/         # React + Vite frontend
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── components/   # Blog pages, admin dashboard, auth
+│   │   │   └── admin/        # Admin views (overview, posts, analytics)
+│   │   └── styles/           # Tailwind CSS v4, theme
+│   └── ...
+├── compose.yml       # Docker Compose services
+└── Makefile          # Top-level task runner
+```
+
+## Common Commands
 
 ```bash
-make test           # run backend tests
-make lint           # ruff + biome
-make migrate        # alembic upgrade head
-make migration      # create a new migration (prompts for name)
-make reset-db       # wipe and re-migrate (local only)
-make generate-client  # regenerate frontend API client from OpenAPI schema
-make clean          # stop containers + remove volumes
+# Full stack
+make dev              # Start all services (db, backend, frontend)
+make test             # Run all tests (backend + frontend)
+make lint             # Lint backend and frontend
+
+# Backend only
+cd backend && uv sync                    # Install Python deps
+cd backend && bash scripts/test.sh       # Run backend tests
+cd backend && alembic upgrade head       # Run migrations
+
+# Frontend only
+cd frontend && pnpm install            # Install frontend deps
+cd frontend && pnpm dev                # Start frontend dev server
 ```
 
 ## GitHub Actions
-
-Three workflows — nothing more:
 
 | Workflow | Trigger | Does |
 |----------|---------|------|
@@ -50,33 +104,13 @@ Three workflows — nothing more:
 | `deploy.yml` | manual or on release | build + push to ECR, deploy to ECS |
 | `pre-commit.yml` | PR | runs pre-commit hooks |
 
-### Secrets needed for deploy
+## Customising for a New Project
 
-| Secret | Description |
-|--------|-------------|
-| `AWS_ACCOUNT_ID` | Your AWS account ID |
-| `AWS_ROLE_ARN` | IAM role ARN for OIDC (no long-lived keys) |
-| `ECR_REPO_BACKEND` | ECR repo name for backend image |
-| `ECR_REPO_FRONTEND` | ECR repo name for frontend image |
-| `VITE_API_URL` | Production API URL passed to frontend build |
-| `ECS_CLUSTER` | ECS cluster name (if using Fargate) |
-| `ECS_SERVICE_BACKEND` | ECS service name for backend |
-| `ECS_SERVICE_FRONTEND` | ECS service name for frontend |
+1. Rename `Item`/`items` throughout `backend/app/` to your domain model.
+2. Update `PROJECT_NAME` in `.env`.
+3. Update `AWS_REGION` and repo names in `deploy.yml`.
+4. Update frontend branding in `frontend/src/app/components/`.
 
-> **OIDC setup:** Add a GitHub OIDC identity provider to your AWS account and attach a role — no `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` needed in secrets.
+## License
 
-## What changed from upstream
-
-- **GitHub Actions:** removed 8 org-specific workflows (`add-to-project`, `issue-manager`, `latest-changes`, `smokeshow`, `labeler`, `guard-dependencies`, `detect-conflicts`, `zizmor`). Deploy workflows replaced with ECR+ECS flow on GitHub-hosted runners. Pre-commit simplified (no auto-push, no `PRE_COMMIT` token secret needed).
-- **Branch:** all `master` references changed to `main`.
-- **Makefile:** added top-level task runner.
-- **`.env.example`:** replaces the committed `.env` with a proper example file. No `changethis` defaults.
-- **Copier scaffolding:** `.copier/` and `copier.yml` deleted (template generation tooling, not needed in a fork).
-- **Coverage gate:** removed `--fail-under=90` from CI (add it back once you have meaningful coverage).
-
-## Customising for a new project
-
-1. Rename `Item`/`items` throughout `backend/app/` to your domain model
-2. Update `PROJECT_NAME` in `.env`
-3. Update `AWS_REGION` and repo names in `deploy.yml`
-4. Delete `backend/app/alembic/versions/` migrations and start fresh with `make migration`
+MIT
