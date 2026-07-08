@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, func, select
@@ -32,6 +32,8 @@ def read_posts(
     limit: Annotated[int, Query(ge=1, le=100)] = settings.DEFAULT_PAGE_SIZE,
     tag: str | None = None,
     search: str | None = None,
+    featured: bool | None = None,
+    sort_by: Literal["published_at", "view_count"] = "published_at",
     page: Annotated[int, Query(ge=1)] = 1,
 ) -> PaginatedPostsResponse:
     """Public endpoint — returns published posts only."""
@@ -45,8 +47,13 @@ def read_posts(
         query = query.where(
             Post.title.ilike(f"%{search}%") | Post.excerpt.ilike(f"%{search}%")  # type: ignore[attr-defined]
         )
+    if featured is not None:
+        query = query.where(Post.featured == featured)
 
-    query = query.order_by(Post.created_at.desc())
+    if sort_by == "view_count":
+        query = query.order_by(Post.view_count.desc(), Post.created_at.desc())  # type: ignore[attr-defined]
+    else:
+        query = query.order_by(Post.created_at.desc())
 
     total = session.exec(select(func.count()).select_from(query.subquery())).one()
     posts = session.exec(query.offset(offset).limit(limit)).all()
