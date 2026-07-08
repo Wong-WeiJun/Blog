@@ -64,7 +64,7 @@ def test_recovery_password(
 
 
 def test_recovery_password_no_email_provider(
-    normal_user_token_headers: dict[str, str]
+    normal_user_token_headers: dict[str, str],
 ) -> None:
     with patch(
         "app.api.routes.login.send_email",
