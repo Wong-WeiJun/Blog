@@ -409,3 +409,142 @@ class ProjectResponse(SQLModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ─── Site About (singleton CMS) ─────────────────────────────────────
+
+
+class SkillItem(SQLModel):
+    name: str
+    level: int = Field(ge=0, le=100)
+
+
+class SkillGroup(SQLModel):
+    category: str
+    icon: str
+    color: str
+    skills: list[SkillItem] = []
+
+
+class Certification(SQLModel):
+    name: str
+    issuer: str
+    date: str
+    badge: str
+    color: str
+    abbr: str
+
+
+class EducationEntry(SQLModel):
+    institution: str
+    degree: str
+    minor: str = ""
+    start: str
+    end: str
+    current: bool = False
+    gpa: str = "—"
+    highlights: list[str] = []
+
+
+class Interest(SQLModel):
+    icon: str
+    label: str
+    color: str
+
+
+class SiteAbout(SQLModel, table=True):
+    id: int = Field(default=1, primary_key=True)
+    homepage_tagline: str = "Building cool things in the cloud"
+    homepage_headline: str = "Cloud Engineer"
+    homepage_headline_accent: str = "in progress."
+    homepage_bio: str = (
+        "Building resilient infrastructure, automating deployments, "
+        "and documenting the journey — one cloud pattern at a time."
+    )
+    hero_subtitle: str = "Cloud Engineer in Progress · SRE Aspirant"
+    hero_bio: str = (
+        "A developer blog chronicling cloud infrastructure, DevOps practices, "
+        "and the hard-won lessons learned along the way."
+    )
+    open_to_work: bool = True
+    resume_url: str | None = "/Resume.pdf"
+    github_url: str | None = "https://github.com/Wong-WeiJun"
+    linkedin_url: str | None = "https://www.linkedin.com/in/wei-jun-wong-507069357/"
+    about_paragraphs: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(JSON),
+    )
+    pull_quote: str = (
+        "The best infrastructure is the kind you forget is there "
+        "until the day it quietly saves you at 2 AM."
+    )
+    pull_quote_attribution: str = "engineer-in-progress"
+    location: str = "Planet Earth"
+    availability_text: str = "Always learning"
+    cta_heading: str = "Let's work together"
+    cta_subtext: str = "Interested in cloud engineering, SRE, or infrastructure roles."
+    skill_groups: list[dict] = Field(default_factory=list, sa_column=Column(JSON))
+    certifications: list[dict] = Field(default_factory=list, sa_column=Column(JSON))
+    education: list[dict] = Field(default_factory=list, sa_column=Column(JSON))
+    interests: list[dict] = Field(default_factory=list, sa_column=Column(JSON))
+    updated_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),
+    )
+
+
+class SiteOwner(SQLModel):
+    full_name: str | None = None
+    avatar_url: str | None = None
+
+
+class SiteAboutUpdate(SQLModel):
+    homepage_tagline: str | None = None
+    homepage_headline: str | None = None
+    homepage_headline_accent: str | None = None
+    homepage_bio: str | None = None
+    hero_subtitle: str | None = None
+    hero_bio: str | None = None
+    open_to_work: bool | None = None
+    resume_url: str | None = None
+    github_url: str | None = None
+    linkedin_url: str | None = None
+    about_paragraphs: list[str] | None = None
+    pull_quote: str | None = None
+    pull_quote_attribution: str | None = None
+    location: str | None = None
+    availability_text: str | None = None
+    cta_heading: str | None = None
+    cta_subtext: str | None = None
+    skill_groups: list[SkillGroup] | None = None
+    certifications: list[Certification] | None = None
+    education: list[EducationEntry] | None = None
+    interests: list[Interest] | None = None
+
+
+class SiteAboutResponse(SQLModel):
+    homepage_tagline: str
+    homepage_headline: str
+    homepage_headline_accent: str
+    homepage_bio: str
+    hero_subtitle: str
+    hero_bio: str
+    open_to_work: bool
+    resume_url: str | None
+    github_url: str | None
+    linkedin_url: str | None
+    about_paragraphs: list[str]
+    pull_quote: str
+    pull_quote_attribution: str
+    location: str
+    availability_text: str
+    cta_heading: str
+    cta_subtext: str
+    skill_groups: list[SkillGroup]
+    certifications: list[Certification]
+    education: list[EducationEntry]
+    interests: list[Interest]
+    owner: SiteOwner
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
