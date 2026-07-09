@@ -2,6 +2,8 @@ import {
   loginRecoverPassword,
   loginResetPassword,
   loginLogout,
+  loginVerifyEmail,
+  loginResendVerificationEmail,
   type BodyLoginLoginAccessToken,
   type UserPublic,
   type UserRegister,
@@ -61,9 +63,6 @@ const useAuth = () => {
   const signUpMutation = useMutation({
     mutationFn: (data: UserRegister) =>
       usersRegisterUser({ body: data, throwOnError: true }),
-    onSuccess: () => {
-      navigate("/auth");
-    },
     onError: handleError.bind(showErrorToast),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -126,6 +125,24 @@ const useAuth = () => {
     onError: handleError.bind(showErrorToast),
   });
 
+  const verifyEmailMutation = useMutation({
+    mutationFn: (token: string) =>
+      loginVerifyEmail({
+        body: { token },
+        throwOnError: true,
+      }),
+    onError: handleError.bind(showErrorToast),
+  });
+
+  const resendVerificationMutation = useMutation({
+    mutationFn: (email: string) =>
+      loginResendVerificationEmail({
+        path: { email },
+        throwOnError: true,
+      }),
+    onError: handleError.bind(showErrorToast),
+  });
+
   const refreshUser = () => {
     queryClient.invalidateQueries({ queryKey: ["currentUser"] });
   };
@@ -135,6 +152,8 @@ const useAuth = () => {
     loginMutation,
     recoverPasswordMutation,
     resetPasswordMutation,
+    verifyEmailMutation,
+    resendVerificationMutation,
     logout,
     refreshUser,
     user: user ?? null,
