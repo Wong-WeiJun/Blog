@@ -12,6 +12,11 @@ BASE = f"{settings.API_V1_STR}/about"
 
 class TestGetAbout:
     def test_public_get_returns_defaults(self, client: TestClient, db: Session):
+        about = get_or_create_site_about(db)
+        about.homepage_tagline = "Building cool things in the cloud"
+        db.add(about)
+        db.commit()
+
         r = client.get(BASE)
         assert r.status_code == 200
         data = r.json()
@@ -39,16 +44,23 @@ class TestUpdateAbout:
         client: TestClient,
         superuser_token_headers: dict[str, str],
     ):
-        r = client.put(
-            BASE,
-            headers=superuser_token_headers,
-            json={"homepage_tagline": "New tagline from test"},
-        )
-        assert r.status_code == 200
-        assert r.json()["homepage_tagline"] == "New tagline from test"
+        try:
+            r = client.put(
+                BASE,
+                headers=superuser_token_headers,
+                json={"homepage_tagline": "New tagline from test"},
+            )
+            assert r.status_code == 200
+            assert r.json()["homepage_tagline"] == "New tagline from test"
 
-        get_r = client.get(BASE)
-        assert get_r.json()["homepage_tagline"] == "New tagline from test"
+            get_r = client.get(BASE)
+            assert get_r.json()["homepage_tagline"] == "New tagline from test"
+        finally:
+            client.put(
+                BASE,
+                headers=superuser_token_headers,
+                json={"homepage_tagline": "Building cool things in the cloud"},
+            )
 
     def test_rejects_invalid_skill_level(
         self,
