@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
 import { type UserUpdateMe, type UpdatePassword, usersUpdateUserMe, usersUpdatePasswordMe } from "@/client";
-import { usersUpdateAvatarMe } from "@/client/sdk.gen";
+import { usersUpdateAvatarMe, uploadsGetAvatarUploadUrl } from "@/client/sdk.gen";
 import useCustomToast from "../../../hooks/useCustomToast";
 
 /* ─── types ─── */
@@ -150,22 +150,11 @@ async function uploadAvatarToR2(
   file: File,
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  const token = localStorage.getItem("access_token");
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  const res = await fetch("/api/v1/uploads/avatar-url", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ filename: file.name, content_type: file.type }),
+  const res = await uploadsGetAvatarUploadUrl({
+    body: { filename: file.name, content_type: file.type },
+    throwOnError: true,
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { detail?: string }).detail ?? "Failed to get upload URL");
-  }
-  const { url, fields, public_url } = await res.json() as {
-    url: string; fields: Record<string, string>; public_url: string;
-  };
+  const { url, fields, public_url } = res.data;
 
   return new Promise((resolve, reject) => {
     const fd = new FormData();
