@@ -131,8 +131,8 @@ def update_avatar_me(
     *, session: SessionDep, body: AvatarUpdate, current_user: CurrentUser
 ) -> Any:
     """
-    Save the S3 avatar URL returned after a successful presigned upload.
-    The actual file upload happens client-side directly to S3.
+    Save the R2 avatar URL returned after a successful presigned upload.
+    The actual file upload happens client-side directly to R2.
     """
     current_user.avatar_url = body.avatar_url
     session.add(current_user)
