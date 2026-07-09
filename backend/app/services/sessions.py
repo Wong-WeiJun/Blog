@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col, delete, select
 
 from app.models import UserSession, UserSessionPublic
 from app.services.user_agent import parse_user_agent
@@ -80,6 +80,10 @@ def touch_user_session(*, session: Session, user_session: UserSession) -> None:
     user_session.last_seen_at = now
     session.add(user_session)
     session.commit()
+
+
+def delete_user_sessions(*, session: Session, user_id: uuid.UUID) -> None:
+    session.exec(delete(UserSession).where(UserSession.user_id == user_id))
 
 
 def revoke_user_session(*, session: Session, user_session: UserSession) -> None:
