@@ -1,6 +1,6 @@
 import type { ReactNode, CSSProperties } from "react";
 import { useState, useRef, useCallback } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router";
 import {
   User, Shield, AlertTriangle, Camera, Eye, EyeOff,
@@ -8,7 +8,7 @@ import {
   CheckCircle2, X, Check,
 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
-import { type UserUpdateMe, type UpdatePassword, usersUpdateUserMe, usersUpdatePasswordMe, usersUpdateAvatarMe } from "@/client";
+import { type UserUpdateMe, type UpdatePassword, type UserSessionPublic, usersUpdateUserMe, usersUpdatePasswordMe, usersUpdateAvatarMe, usersReadUserSessions, usersRevokeSession } from "@/client";
 import { uploadAvatarImage } from "../../../lib/upload-image";
 import useCustomToast from "../../../hooks/useCustomToast";
 
@@ -453,44 +453,64 @@ function StrengthBar({ password }: { password: string }) {
   );
 }
 
-/* ─── Session card ─── */
+/* ─── Session helpers ─── */
 
-const SESSIONS = [
-  { id: 1, device: "MacBook Pro", os: "macOS 15", browser: "Chrome 126", location: "Local", current: true,  icon: <Monitor size={16} />, lastSeen: "Now" },
-  { id: 2, device: "iPhone 15 Pro", os: "iOS 17", browser: "Safari Mobile", location: "Local", current: false, icon: <Smartphone size={16} />, lastSeen: "2 hours ago" },
-  { id: 3, device: "Unknown Device", os: "Windows 11", browser: "Firefox 127", location: "Remote",  current: false, icon: <Globe size={16} />, lastSeen: "3 days ago" },
-];
+function formatRelativeTime(isoDate: string): string {
+  const date = new Date(isoDate);
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return "Just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
+  return date.toLocaleDateString();
+}
 
-function SessionRow({ session, onRevoke }: { session: typeof SESSIONS[0]; onRevoke: (id: number) => void }) {
+function sessionIcon(deviceType: string) {
+  if (deviceType === "mobile" || deviceType === "tablet") {
+    return <Smartphone size={16} />;
+  }
+  if (deviceType === "desktop") {
+    return <Monitor size={16} />;
+  }
+  return <Globe size={16} />;
+}
+
+function SessionRow({ session, onRevoke, revoking }: { session: UserSessionPublic; onRevoke: (id: string) => void; revoking: boolean }) {
   const [confirming, setConfirming] = useState(false);
+  const lastSeen = session.is_current ? "Now" : formatRelativeTime(session.last_seen_at);
+
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-      <div style={{ width: "36px", height: "36px", borderRadius: "9px", background: session.current ? "rgba(80,70,229,0.2)" : "rgba(255,255,255,0.06)", border: `1px solid ${session.current ? "rgba(80,70,229,0.4)" : "rgba(255,255,255,0.08)"}`, display: "flex", alignItems: "center", justifyContent: "center", color: session.current ? "#a5b4fc" : "rgba(255,255,255,0.4)", flexShrink: 0 }}>
-        {session.icon}
+      <div style={{ width: "36px", height: "36px", borderRadius: "9px", background: session.is_current ? "rgba(80,70,229,0.2)" : "rgba(255,255,255,0.06)", border: `1px solid ${session.is_current ? "rgba(80,70,229,0.4)" : "rgba(255,255,255,0.08)"}`, display: "flex", alignItems: "center", justifyContent: "center", color: session.is_current ? "#a5b4fc" : "rgba(255,255,255,0.4)", flexShrink: 0 }}>
+        {sessionIcon(session.device_type)}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 600, color: "#fff", margin: 0 }}>{session.device}</p>
-          {session.current && (
+          {session.is_current && (
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.65rem", fontWeight: 700, color: "#4ade80", background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: "999px", padding: "1px 8px" }}>Current</span>
           )}
         </div>
         <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.35)", margin: "3px 0 0" }}>
-          {session.browser} · {session.os} · {session.location} · {session.lastSeen}
+          {session.browser} · {session.os} · {session.location} · {lastSeen}
         </p>
       </div>
-      {!session.current && (
+      {!session.is_current && (
         confirming ? (
           <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "#f87171" }}>Revoke?</span>
-            <button onClick={() => onRevoke(session.id)} style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", fontWeight: 600, color: "#fff", background: "#dc2626", border: "none", borderRadius: "5px", padding: "4px 10px", cursor: "pointer" }}>Yes</button>
-            <button onClick={() => setConfirming(false)} style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", color: "rgba(255,255,255,0.45)", background: "rgba(255,255,255,0.06)", border: "none", borderRadius: "5px", padding: "4px 10px", cursor: "pointer" }}>No</button>
+            <button onClick={() => onRevoke(session.id)} disabled={revoking} style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", fontWeight: 600, color: "#fff", background: "#dc2626", border: "none", borderRadius: "5px", padding: "4px 10px", cursor: revoking ? "default" : "pointer", opacity: revoking ? 0.6 : 1 }}>Yes</button>
+            <button onClick={() => setConfirming(false)} disabled={revoking} style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", color: "rgba(255,255,255,0.45)", background: "rgba(255,255,255,0.06)", border: "none", borderRadius: "5px", padding: "4px 10px", cursor: revoking ? "default" : "pointer" }}>No</button>
           </div>
         ) : (
           <button
             onClick={() => setConfirming(true)}
-            style={{ display: "flex", alignItems: "center", gap: "5px", fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "7px", padding: "6px 12px", cursor: "pointer", flexShrink: 0, transition: "all 0.15s" }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "#f87171"; e.currentTarget.style.borderColor = "rgba(248,113,113,0.4)"; }}
+            disabled={revoking}
+            style={{ display: "flex", alignItems: "center", gap: "5px", fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "7px", padding: "6px 12px", cursor: revoking ? "default" : "pointer", flexShrink: 0, transition: "all 0.15s", opacity: revoking ? 0.5 : 1 }}
+            onMouseEnter={(e) => { if (!revoking) { e.currentTarget.style.color = "#f87171"; e.currentTarget.style.borderColor = "rgba(248,113,113,0.4)"; } }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
           >
             <LogOut size={13} />Revoke
@@ -510,8 +530,35 @@ function SecurityTab({ userEmail: _userEmail }: { userEmail: string }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [sessions, setSessions] = useState(SESSIONS);
   const { showSuccessToast, showErrorToast } = useCustomToast();
+  const queryClient = useQueryClient();
+
+  const {
+    data: sessionsData,
+    isLoading: sessionsLoading,
+    isError: sessionsError,
+  } = useQuery({
+    queryKey: ["userSessions"],
+    queryFn: async () => {
+      const response = await usersReadUserSessions({ throwOnError: true });
+      return response.data;
+    },
+  });
+
+  const sessions = sessionsData?.data ?? [];
+  const otherSessions = sessions.filter((session) => !session.is_current);
+
+  const revokeSessionMutation = useMutation({
+    mutationFn: (sessionId: string) =>
+      usersRevokeSession({ path: { session_id: sessionId }, throwOnError: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userSessions"] });
+      showSuccessToast("Session revoked.");
+    },
+    onError: () => {
+      showErrorToast("Failed to revoke session.");
+    },
+  });
 
   const changePasswordMutation = useMutation({
     mutationFn: (data: UpdatePassword) => usersUpdatePasswordMe({ body: data, throwOnError: true }),
@@ -561,16 +608,37 @@ function SecurityTab({ userEmail: _userEmail }: { userEmail: string }) {
       <SectionCard>
         <SectionTitle>Active sessions</SectionTitle>
         <SectionDesc>Devices currently signed in to your account. Revoke any session you don't recognise.</SectionDesc>
-        <div>
-          {sessions.map((s) => (
-            <SessionRow key={s.id} session={s} onRevoke={(id) => setSessions((prev) => prev.filter((x) => x.id !== id))} />
-          ))}
-          {sessions.length === 1 && (
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", marginTop: "16px" }}>
-              No other active sessions.
-            </p>
-          )}
-        </div>
+        {sessionsLoading ? (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 0", color: "rgba(255,255,255,0.45)" }}>
+            <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} />
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem" }}>Loading sessions…</span>
+          </div>
+        ) : sessionsError ? (
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "#f87171", margin: 0 }}>
+            Could not load active sessions.
+          </p>
+        ) : (
+          <div>
+            {sessions.map((session) => (
+              <SessionRow
+                key={session.id}
+                session={session}
+                onRevoke={(id) => revokeSessionMutation.mutate(id)}
+                revoking={revokeSessionMutation.isPending}
+              />
+            ))}
+            {sessions.length === 0 && (
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>
+                No active sessions. Sign in again to create a tracked session.
+              </p>
+            )}
+            {otherSessions.length === 0 && sessions.length > 0 && (
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", marginTop: "16px" }}>
+                No other active sessions.
+              </p>
+            )}
+          </div>
+        )}
       </SectionCard>
     </div>
   );
