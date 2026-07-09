@@ -26,9 +26,11 @@ interface AuthContextValue {
   user: AuthUser | null;
   login: (email: string, password: string) => void;
   logout: () => void;
-  register: (name: string, email: string, password: string) => void;
+  register: (name: string, email: string, password: string, options?: MutationOptions) => void;
   recoverPassword: (email: string, options?: MutationOptions) => void;
   resetPassword: (token: string, password: string, options?: MutationOptions) => void;
+  verifyEmail: (token: string, options?: MutationOptions) => void;
+  resendVerification: (email: string, options?: MutationOptions) => void;
   refreshUser: () => void;
   isLoading: boolean;
   isLoggingIn: boolean;
@@ -36,6 +38,8 @@ interface AuthContextValue {
   isRegistering: boolean;
   isRecoveringPassword: boolean;
   isResettingPassword: boolean;
+  isVerifyingEmail: boolean;
+  isResendingVerification: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -63,9 +67,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const register = useCallback(
-    (name: string, email: string, password: string) => {
+    (name: string, email: string, password: string, options?: MutationOptions) => {
       const data: UserRegister = { full_name: name, email, password };
-      auth.signUpMutation.mutate(data);
+      auth.signUpMutation.mutate(data, {
+        onSuccess: options?.onSuccess,
+        onError: options?.onError,
+      });
     },
     [auth.signUpMutation],
   );
@@ -93,6 +100,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [auth.resetPasswordMutation],
   );
 
+  const verifyEmail = useCallback(
+    (token: string, options?: MutationOptions) => {
+      auth.verifyEmailMutation.mutate(token, {
+        onSuccess: options?.onSuccess,
+        onError: options?.onError,
+      });
+    },
+    [auth.verifyEmailMutation],
+  );
+
+  const resendVerification = useCallback(
+    (email: string, options?: MutationOptions) => {
+      auth.resendVerificationMutation.mutate(email, {
+        onSuccess: options?.onSuccess,
+        onError: options?.onError,
+      });
+    },
+    [auth.resendVerificationMutation],
+  );
+
   const logout = useCallback(() => { auth.logout(); }, [auth.logout]);
 
   const refreshUser = useCallback(() => {
@@ -110,6 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         recoverPassword,
         resetPassword,
+        verifyEmail,
+        resendVerification,
         refreshUser,
         isLoading: auth.isLoading,
         isLoggingIn: auth.loginMutation.isPending,
@@ -117,6 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isRegistering: auth.signUpMutation.isPending,
         isRecoveringPassword: auth.recoverPasswordMutation.isPending,
         isResettingPassword: auth.resetPasswordMutation.isPending,
+        isVerifyingEmail: auth.verifyEmailMutation.isPending,
+        isResendingVerification: auth.resendVerificationMutation.isPending,
       }}
     >
       {children}
