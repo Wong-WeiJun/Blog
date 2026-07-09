@@ -4,7 +4,7 @@ import {
   Camera, Check, CheckCircle2, Loader2, AlertCircle, X,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { usersUpdateUserMe, usersUpdateAvatarMe } from "@/client/sdk.gen";
+import { usersUpdateUserMe, usersUpdateAvatarMe, uploadsGetAvatarUploadUrl } from "@/client/sdk.gen";
 import { useAuth } from "../../../lib/auth-context";
 import { BRAND_NAME, BRAND_EMAIL, BRAND_HANDLE, BRAND_GITHUB } from "../../../lib/constants";
 import useCustomToast from "../../../hooks/useCustomToast";
@@ -65,23 +65,11 @@ async function uploadAvatarToR2(
   file: File,
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  const token = localStorage.getItem("access_token");
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  // Step 1 — request presigned URL from our backend
-  const res = await fetch("/api/v1/uploads/avatar-url", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ filename: file.name, content_type: file.type }),
+  const res = await uploadsGetAvatarUploadUrl({
+    body: { filename: file.name, content_type: file.type },
+    throwOnError: true,
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { detail?: string }).detail ?? "Failed to get upload URL");
-  }
-  const { url, fields, public_url } = await res.json() as {
-    url: string; fields: Record<string, string>; public_url: string;
-  };
+  const { url, fields, public_url } = res.data;
 
   // Step 2 — POST directly to R2 with presigned fields
   return new Promise((resolve, reject) => {
