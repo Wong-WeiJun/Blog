@@ -4,7 +4,8 @@ import {
   Camera, Check, CheckCircle2, Loader2, AlertCircle, X,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { usersUpdateUserMe, usersUpdateAvatarMe, uploadsGetAvatarUploadUrl } from "@/client/sdk.gen";
+import { usersUpdateUserMe, usersUpdateAvatarMe } from "@/client/sdk.gen";
+import { uploadAvatarImage } from "../../../lib/upload-image";
 import { useAuth } from "../../../lib/auth-context";
 import { BRAND_NAME, BRAND_EMAIL, BRAND_HANDLE, BRAND_GITHUB } from "../../../lib/constants";
 import useCustomToast from "../../../hooks/useCustomToast";
@@ -65,30 +66,7 @@ async function uploadAvatarToR2(
   file: File,
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  const res = await uploadsGetAvatarUploadUrl({
-    body: { filename: file.name, content_type: file.type },
-    throwOnError: true,
-  });
-  const { url, fields, public_url } = res.data;
-
-  // Step 2 — POST directly to R2 with presigned fields
-  return new Promise((resolve, reject) => {
-    const fd = new FormData();
-    Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
-    fd.append("file", file);
-
-    const xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.onload = () => {
-      if (xhr.status === 204 || xhr.status === 200) resolve(public_url);
-      else reject(new Error(`Upload failed: ${xhr.status}`));
-    };
-    xhr.onerror = () => reject(new Error("Network error during upload"));
-    xhr.open("POST", url);
-    xhr.send(fd);
-  });
+  return uploadAvatarImage(file, onProgress);
 }
 
 function AvatarUpload({
