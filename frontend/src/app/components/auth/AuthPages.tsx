@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { Link } from "react-router";
-import { Eye, EyeOff, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Check } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Check, Mail } from "lucide-react";
+import { AxiosError } from "axios";
 import { useAuth } from "../../../lib/auth-context";
 import { BRAND_NAME, BRAND_DOMAIN } from "../../../lib/constants";
 
@@ -126,6 +127,16 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
+function extractApiErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof AxiosError) {
+    const detail = (err.response?.data as { detail?: string })?.detail;
+    if (typeof detail === "string" && detail.length > 0) {
+      return detail;
+    }
+  }
+  return fallback;
+}
+
 function Card({ children }: { children: ReactNode }) {
   return (
     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: "18px", padding: "36px 36px", backdropFilter: "blur(16px)", width: "100%", maxWidth: "420px", boxShadow: "0 24px 64px rgba(0,0,0,0.5)" }}>
@@ -174,16 +185,33 @@ function LoginPage({ onSwitch }: NavProps) {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
-  const { login, isLoggingIn, loginError } = useAuth();
+  const [resendSent, setResendSent] = useState(false);
+  const { login, isLoggingIn, loginError, resendVerification, isResendingVerification } = useAuth();
 
   const submit = () => {
     setError("");
+    setResendSent(false);
     if (!email || !password) { setError("Please fill in your email and password."); return; }
     if (!email.includes("@")) { setError("That doesn't look like a valid email address."); return; }
     login(email, password);
   };
 
+  const loginErrorMessage = loginError
+    ? extractApiErrorMessage(loginError, "Incorrect email or password")
+    : "";
+  const emailNotVerified = loginErrorMessage === "Email not verified";
   const hasError = !!error || !!loginError;
+
+  const handleResend = () => {
+    if (!email.includes("@")) {
+      setError("Enter your email address above, then try again.");
+      return;
+    }
+    resendVerification(email, {
+      onSuccess: () => setResendSent(true),
+      onError: (err) => setError(extractApiErrorMessage(err, "Could not resend verification email.")),
+    });
+  };
 
   return (
     <Card>
@@ -196,8 +224,30 @@ function LoginPage({ onSwitch }: NavProps) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {error && <ErrorBanner message={error} />}
-        {loginError && (
-          <ErrorBanner message="Incorrect email or password" />
+        {loginError && !emailNotVerified && (
+          <ErrorBanner message={loginErrorMessage} />
+        )}
+        {emailNotVerified && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", background: "rgba(80,70,229,0.1)", border: "1px solid rgba(80,70,229,0.25)", borderRadius: "9px", padding: "11px 14px" }}>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "#c7d2fe", margin: 0, lineHeight: 1.5 }}>
+              Please verify your email before signing in. Check your inbox for the verification link.
+            </p>
+            {resendSent ? (
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "#4ade80", margin: 0 }}>
+                Verification email sent. Check your spam folder if it doesn&apos;t arrive.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={isResendingVerification}
+                style={{ alignSelf: "flex-start", fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 600, color: "#a5b4fc", background: "none", border: "none", cursor: isResendingVerification ? "default" : "pointer", padding: 0, display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                {isResendingVerification ? <Loader2 size={14} style={{ animation: "spin 0.8s linear infinite" }} /> : <Mail size={14} />}
+                Resend verification email
+              </button>
+            )}
+          </div>
         )}
 
         <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" error={hasError} autoComplete="email" />
@@ -245,6 +295,7 @@ function RegisterPage({ onSwitch }: NavProps) {
   const [confirm, setConfirm] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
+  const [registerError, setRegisterError] = useState("");
   const { register, isRegistering } = useAuth();
 
   const validate = () => {
@@ -259,28 +310,30 @@ function RegisterPage({ onSwitch }: NavProps) {
   const submit = () => {
     const e = validate();
     setErrors(e);
+    setRegisterError("");
     if (Object.keys(e).length) return;
-    register(name, email, password);
-    setSuccess(true);
+    register(name, email, password, {
+      onSuccess: () => setSuccess(true),
+      onError: (err) => setRegisterError(extractApiErrorMessage(err, "Could not create account.")),
+    });
   };
 
   if (success) {
     return (
       <Card>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", padding: "16px 0 8px", textAlign: "center" }}>
-          {/* Animated checkmark circle */}
-          <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "rgba(74,222,128,0.12)", border: "2px solid rgba(74,222,128,0.35)", display: "flex", alignItems: "center", justifyContent: "center", animation: "fadeScale 0.4s ease" }}>
-            <CheckCircle2 size={36} color="#4ade80" />
+          <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "rgba(80,70,229,0.15)", border: "2px solid rgba(80,70,229,0.4)", display: "flex", alignItems: "center", justifyContent: "center", animation: "fadeScale 0.4s ease" }}>
+            <Mail size={34} color="#a5b4fc" />
           </div>
           <div>
-            <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.5rem", color: "#fff", margin: "0 0 8px", letterSpacing: "-0.015em" }}>Account created</h2>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.5rem", color: "#fff", margin: "0 0 8px", letterSpacing: "-0.015em" }}>Check your email</h2>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", color: "rgba(255,255,255,0.5)", margin: "0 0 4px", lineHeight: 1.6 }}>
-              Your account has been created successfully.
+              We sent a verification link to
             </p>
             <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.875rem", color: "#a5b4fc", margin: 0 }}>{email}</p>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", color: "rgba(255,255,255,0.35)", margin: 0, lineHeight: 1.6, maxWidth: "300px" }}>
-            You can now sign in with your credentials.
+            Click the link in that email to activate your account, then sign in.
           </p>
           <button
             onClick={() => onSwitch("login")}
@@ -304,6 +357,7 @@ function RegisterPage({ onSwitch }: NavProps) {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        {registerError && <ErrorBanner message={registerError} />}
         <Field label="Full name" value={name} onChange={setName} placeholder="Ada Lovelace" error={!!errors.name} autoComplete="name" />
         {errors.name && <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "#f87171", margin: "-8px 0 0", display: "flex", alignItems: "center", gap: "4px" }}><AlertCircle size={12} />{errors.name}</p>}
 
