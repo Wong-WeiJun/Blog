@@ -4,12 +4,16 @@ from fastapi.testclient import TestClient
 from pwdlib.hashers.bcrypt import BcryptHasher
 from sqlmodel import Session
 
+from app import crud
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.crud import create_user
 from app.main import app
 from app.models import User, UserCreate
-from app.utils import generate_password_reset_token
+from app.utils import (
+    generate_email_verification_token,
+    generate_password_reset_token,
+)
 from tests.utils.user import user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
 
@@ -153,7 +157,9 @@ def test_login_with_bcrypt_password_upgrades_to_argon2(
     bcrypt_hash = bcrypt_hasher.hash(password)
     assert bcrypt_hash.startswith("$2")  # bcrypt hashes start with $2
 
-    user = User(email=email, hashed_password=bcrypt_hash, is_active=True)
+    user = User(
+        email=email, hashed_password=bcrypt_hash, is_active=True, email_verified=True
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -187,7 +193,9 @@ def test_login_with_argon2_password_keeps_hash(client: TestClient, db: Session) 
     assert argon2_hash.startswith("$argon2")
 
     # Create user with argon2 hash
-    user = User(email=email, hashed_password=argon2_hash, is_active=True)
+    user = User(
+        email=email, hashed_password=argon2_hash, is_active=True, email_verified=True
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -204,3 +212,99 @@ def test_login_with_argon2_password_keeps_hash(client: TestClient, db: Session) 
 
     assert user.hashed_password == original_hash
     assert user.hashed_password.startswith("$argon2")
+
+
+def test_login_unverified_email(client: TestClient, db: Session) -> None:
+    email = random_email()
+    password = random_lower_string()
+    user_create = UserCreate(
+        email=email,
+        password=password,
+        is_active=True,
+        email_verified=False,
+    )
+    create_user(session=db, user_create=user_create)
+
+    login_data = {"username": email, "password": password}
+    r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
+    assert r.status_code == 400
+    assert r.json()["detail"] == "Email not verified"
+
+
+def test_verify_email(client: TestClient, db: Session) -> None:
+    email = random_email()
+    password = random_lower_string()
+    user_create = UserCreate(
+        email=email,
+        password=password,
+        is_active=True,
+        email_verified=False,
+    )
+    user = create_user(session=db, user_create=user_create)
+    token = generate_email_verification_token(email=email)
+
+    r = client.post(
+        f"{settings.API_V1_STR}/verify-email/",
+        json={"token": token},
+    )
+    assert r.status_code == 200
+    assert r.json() == {"message": "Email verified successfully"}
+
+    db.refresh(user)
+    assert user.email_verified is True
+
+    login_data = {"username": email, "password": password}
+    r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
+    assert r.status_code == 200
+
+
+def test_verify_email_invalid_token(client: TestClient) -> None:
+    r = client.post(
+        f"{settings.API_V1_STR}/verify-email/",
+        json={"token": "invalid"},
+    )
+    assert r.status_code == 400
+    assert r.json()["detail"] == "Invalid token"
+
+
+def test_resend_verification_email(client: TestClient, db: Session) -> None:
+    email = random_email()
+    password = random_lower_string()
+    user_create = UserCreate(
+        email=email,
+        password=password,
+        is_active=True,
+        email_verified=False,
+    )
+    create_user(session=db, user_create=user_create)
+
+    with (
+        patch("app.api.routes.login.email_delivery_enabled", return_value=True),
+        patch("app.api.routes.login.send_verification_email") as send_mock,
+    ):
+        r = client.post(f"{settings.API_V1_STR}/resend-verification/{email}")
+        assert r.status_code == 200
+        assert r.json() == {
+            "message": "If that email is registered and unverified, we sent a verification link"
+        }
+        send_mock.assert_called_once()
+
+
+def test_register_user_sends_verification_email(
+    client: TestClient, db: Session
+) -> None:
+    username = random_email()
+    password = random_lower_string()
+    data = {"email": username, "password": password, "full_name": "Test User"}
+
+    with (
+        patch("app.api.routes.users.email_delivery_enabled", return_value=True),
+        patch("app.api.routes.users.send_verification_email") as send_mock,
+    ):
+        r = client.post(f"{settings.API_V1_STR}/users/signup", json=data)
+        assert r.status_code == 200
+        send_mock.assert_called_once()
+
+    user = crud.get_user_by_email(session=db, email=username)
+    assert user
+    assert user.email_verified is False
