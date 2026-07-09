@@ -43,7 +43,13 @@ from app.services.sessions import (
     revoke_user_session,
     to_session_public,
 )
-from app.utils import generate_new_account_email, send_email
+from app.utils import (
+    email_delivery_enabled,
+    generate_email_verification_token,
+    generate_new_account_email,
+    send_email,
+    send_verification_email,
+)
 
 
 class AvatarUpdate(BaseModel):
@@ -89,7 +95,8 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
             detail="The user with this email already exists in the system.",
         )
 
-    user = crud.create_user(session=session, user_create=user_in)
+    verified_user_in = user_in.model_copy(update={"email_verified": True})
+    user = crud.create_user(session=session, user_create=verified_user_in)
     if settings.emails_enabled and user_in.email:
         email_data = generate_new_account_email(
             email_to=user_in.email, username=user_in.email, password=user_in.password
@@ -117,10 +124,20 @@ def update_user_me(
                 status_code=409, detail="User with this email already exists"
             )
     user_data = user_in.model_dump(exclude_unset=True)
+    email_changed = "email" in user_data and user_data["email"] != current_user.email
+    if email_changed:
+        user_data["email_verified"] = False
     current_user.sqlmodel_update(user_data)
     session.add(current_user)
     session.commit()
     session.refresh(current_user)
+    if email_changed and email_delivery_enabled():
+        token = generate_email_verification_token(email=current_user.email)
+        send_verification_email(
+            email_to=current_user.email,
+            email=current_user.email,
+            token=token,
+        )
     return current_user
 
 
@@ -289,8 +306,22 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
             status_code=400,
             detail="The user with this email already exists in the system",
         )
-    user_create = UserCreate.model_validate(user_in)
+    user_create = UserCreate.model_validate(user_in).model_copy(
+        update={"email_verified": False}
+    )
     user = crud.create_user(session=session, user_create=user_create)
+    if email_delivery_enabled():
+        token = generate_email_verification_token(email=user.email)
+        send_verification_email(
+            email_to=user.email,
+            email=user.email,
+            token=token,
+        )
+    else:
+        user.email_verified = True
+        session.add(user)
+        session.commit()
+        session.refresh(user)
     return user
 
 
