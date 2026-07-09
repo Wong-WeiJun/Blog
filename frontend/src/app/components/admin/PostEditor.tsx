@@ -92,19 +92,19 @@ function Toolbar({ textareaRef, setValue }: { textareaRef: RefObject<HTMLTextAre
   );
 }
 
-/* ─────────────────────────── cover upload (S3) ───────────────────────── */
+/* ─────────────────────────── cover upload (R2) ───────────────────────── */
 
 type UploadStatus = "idle" | "requesting" | "uploading" | "done" | "error";
 
 /**
- * Uploads a cover image directly to S3 via a presigned POST URL.
+ * Uploads a cover image directly to Cloudflare R2 via a presigned POST URL.
  *
  * Flow:
  *   1. Ask backend for a presigned POST URL (POST /api/v1/uploads/cover-image-url)
- *   2. PUT the file straight to S3 using the presigned fields
+ *   2. POST the file straight to R2 using the presigned fields
  *   3. Call onChange(publicUrl) so the editor can include it in the post body
  */
-async function uploadToS3(
+async function uploadToR2(
   file: File,
   onProgress: (pct: number) => void,
 ): Promise<string> {
@@ -126,10 +126,10 @@ async function uploadToS3(
     url: string; fields: Record<string, string>; public_url: string;
   };
 
-  // Step 2 — POST directly to S3
+  // Step 2 — POST directly to R2
   return new Promise((resolve, reject) => {
     const fd = new FormData();
-    // fields must come before the file (S3 requirement)
+    // fields must come before the file (S3-compatible requirement)
     Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
     fd.append("file", file);
 
@@ -138,11 +138,10 @@ async function uploadToS3(
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
     };
     xhr.onload = () => {
-      // S3 presigned POST returns 204 No Content on success
       if (xhr.status === 204 || xhr.status === 200) resolve(public_url);
-      else reject(new Error(`S3 upload failed: ${xhr.status}`));
+      else reject(new Error(`Upload failed: ${xhr.status}`));
     };
-    xhr.onerror = () => reject(new Error("Network error during S3 upload"));
+    xhr.onerror = () => reject(new Error("Network error during upload"));
     xhr.open("POST", url);
     xhr.send(fd);
   });
@@ -183,7 +182,7 @@ function CoverUpload({
 
     try {
       setStatus("uploading");
-      const publicUrl = await uploadToS3(file, setProgress);
+      const publicUrl = await uploadToR2(file, setProgress);
       onChange(publicUrl);
       setStatus("done");
       URL.revokeObjectURL(objectUrl);
@@ -266,7 +265,7 @@ function CoverUpload({
           )}
           <div>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem", fontWeight: 500, color: "rgba(255,255,255,0.5)", margin: "0 0 2px" }}>
-              {isUploading ? "Uploading to S3…" : (<>Drag & drop or <span style={{ color: "#a5b4fc" }}>browse</span></>)}
+              {isUploading ? "Uploading…" : (<>Drag & drop or <span style={{ color: "#a5b4fc" }}>browse</span></>)}
             </p>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", color: "rgba(255,255,255,0.25)", margin: 0 }}>
               {isUploading ? `${progress}%` : "PNG, JPG, WebP · max 10 MB · 16:9 recommended"}
