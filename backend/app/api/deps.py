@@ -44,6 +44,16 @@ def get_token_jti(token: str) -> uuid.UUID | None:
         return None
 
 
+def get_user_from_token_sub(session: Session, sub: str | None) -> User | None:
+    if not sub:
+        return None
+    try:
+        user_id = uuid.UUID(sub)
+    except ValueError:
+        return None
+    return session.get(User, user_id)
+
+
 def get_current_user(session: SessionDep, token: TokenDep) -> User:
     try:
         payload = jwt.decode(
@@ -67,14 +77,14 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
         if (
             not user_session
             or user_session.revoked_at is not None
-            or str(user_session.user_id) != token_data.sub
+            or str(user_session.user_id) != str(token_data.sub)
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Session expired or revoked",
             )
         touch_user_session(session=session, user_session=user_session)
-    user = session.get(User, token_data.sub)
+    user = get_user_from_token_sub(session, token_data.sub)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
@@ -97,7 +107,7 @@ def get_current_user_optional(
         token_data = TokenPayload(**payload)
     except (InvalidTokenError, ValidationError):
         return None
-    return session.get(User, token_data.sub)
+    return get_user_from_token_sub(session, token_data.sub)
 
 
 OptionalCurrentUser = Annotated[User | None, Depends(get_current_user_optional)]

@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
@@ -26,6 +27,7 @@ from app.utils import (
 )
 
 router = APIRouter(tags=["login"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/login/access-token")
@@ -47,17 +49,22 @@ def login_access_token(
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     session_id = uuid.uuid4()
     expires_at = datetime.now(timezone.utc) + access_token_expires
-    create_user_session(
-        session=session,
-        user_id=user.id,
-        session_id=session_id,
-        user_agent=request.headers.get("user-agent"),
-        ip_address=request.client.host if request.client else None,
-        expires_at=expires_at,
-    )
+    jti: str | None = str(session_id)
+    try:
+        create_user_session(
+            session=session,
+            user_id=user.id,
+            session_id=session_id,
+            user_agent=request.headers.get("user-agent"),
+            ip_address=request.client.host if request.client else None,
+            expires_at=expires_at,
+        )
+    except Exception:
+        logger.exception("Failed to create user session; issuing token without session id")
+        jti = None
     return Token(
         access_token=security.create_access_token(
-            user.id, expires_delta=access_token_expires, jti=str(session_id)
+            user.id, expires_delta=access_token_expires, jti=jti
         )
     )
 

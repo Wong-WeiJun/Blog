@@ -75,7 +75,10 @@ def to_session_public(
 
 def touch_user_session(*, session: Session, user_session: UserSession) -> None:
     now = datetime.now(timezone.utc)
-    if (now - user_session.last_seen_at).total_seconds() < 300:
+    last_seen = user_session.last_seen_at
+    if last_seen.tzinfo is None:
+        last_seen = last_seen.replace(tzinfo=timezone.utc)
+    if (now - last_seen).total_seconds() < 300:
         return
     user_session.last_seen_at = now
     session.add(user_session)

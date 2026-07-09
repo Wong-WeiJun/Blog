@@ -14,9 +14,22 @@ import { handleError } from "@/lib/api";
 import useCustomToast from "./useCustomToast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
+import { AxiosError } from "axios";
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null;
+};
+
+const clearStoredAuth = () => {
+  localStorage.removeItem("access_token");
+  client.setConfig({
+    auth: () => undefined,
+  });
+};
+
+const isAuthFailure = (error: unknown) => {
+  const status = (error as AxiosError)?.response?.status;
+  return status === 401 || status === 403 || status === 404;
 };
 
 const useAuth = () => {
@@ -31,10 +44,18 @@ const useAuth = () => {
   } = useQuery<UserPublic | null, Error>({
     queryKey: ["currentUser"],
     queryFn: async () => {
-      const response = await usersReadUserMe({ throwOnError: true });
-      return response.data;
+      try {
+        const response = await usersReadUserMe({ throwOnError: true });
+        return response.data;
+      } catch (error) {
+        if (isAuthFailure(error)) {
+          clearStoredAuth();
+        }
+        throw error;
+      }
     },
     enabled: isLoggedIn(),
+    retry: false,
   });
 
   const signUpMutation = useMutation({
@@ -79,10 +100,7 @@ const useAuth = () => {
       } catch {
         // Legacy tokens without a session id may not revoke server-side.
       } finally {
-        localStorage.removeItem("access_token");
-        client.setConfig({
-          auth: () => undefined,
-        });
+        clearStoredAuth();
         queryClient.clear();
         navigate("/");
       }
