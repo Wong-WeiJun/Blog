@@ -7,6 +7,7 @@ const VIEW_TITLES: Record<string, string> = {
   comments:  "Comment Moderation",
   tags:      "Tags",
   analytics: "Analytics",
+  about:     "About Page",
   profile:   "Profile",
 };
 
