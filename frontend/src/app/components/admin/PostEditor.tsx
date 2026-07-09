@@ -6,7 +6,7 @@ import {
   Calendar, Loader2, Check, AlertCircle,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { postsCreatePost, postsUpdatePost, postsPublishPost } from "@/client/sdk.gen";
+import { postsCreatePost, postsUpdatePost, postsPublishPost, uploadsGetCoverImageUploadUrl } from "@/client/sdk.gen";
 import type { PostResponse, PostStatus } from "@/client/types.gen";
 import { BRAND_DOMAIN } from "../../../lib/constants";
 import useCustomToast from "../../../hooks/useCustomToast";
@@ -108,23 +108,11 @@ async function uploadToR2(
   file: File,
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  // Step 1 — get presigned URL from backend
-  const token = localStorage.getItem("access_token");
-  const presignRes = await fetch("/api/v1/uploads/cover-image-url", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify({ filename: file.name, content_type: file.type }),
+  const presignRes = await uploadsGetCoverImageUploadUrl({
+    body: { filename: file.name, content_type: file.type },
+    throwOnError: true,
   });
-  if (!presignRes.ok) {
-    const err = await presignRes.json().catch(() => ({}));
-    throw new Error((err as { detail?: string }).detail ?? "Failed to get upload URL");
-  }
-  const { url, fields, public_url } = await presignRes.json() as {
-    url: string; fields: Record<string, string>; public_url: string;
-  };
+  const { url, fields, public_url } = presignRes.data;
 
   // Step 2 — POST directly to R2
   return new Promise((resolve, reject) => {
