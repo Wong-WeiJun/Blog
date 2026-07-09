@@ -1130,6 +1130,152 @@ export type UserCreate = {
 };
 
 /**
+ * UserDataExport
+ */
+export type UserDataExport = {
+    /**
+     * Exported At
+     */
+    exported_at: string;
+    profile: UserPublic;
+    /**
+     * Comments
+     */
+    comments: Array<UserDataExportComment>;
+    /**
+     * Liked Comment Ids
+     */
+    liked_comment_ids: Array<string>;
+    /**
+     * Posts
+     */
+    posts: Array<UserDataExportPost>;
+    /**
+     * Sessions
+     */
+    sessions: Array<UserDataExportSession>;
+};
+
+/**
+ * UserDataExportComment
+ */
+export type UserDataExportComment = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Post Id
+     */
+    post_id: string;
+    /**
+     * Parent Id
+     */
+    parent_id: string | null;
+    /**
+     * Body
+     */
+    body: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * UserDataExportPost
+ */
+export type UserDataExportPost = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Excerpt
+     */
+    excerpt: string;
+    /**
+     * Content
+     */
+    content: string;
+    status: PostStatus;
+    /**
+     * Featured
+     */
+    featured: boolean;
+    /**
+     * Cover Image Url
+     */
+    cover_image_url: string | null;
+    /**
+     * View Count
+     */
+    view_count: number;
+    /**
+     * Published At
+     */
+    published_at: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+};
+
+/**
+ * UserDataExportSession
+ */
+export type UserDataExportSession = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Device
+     */
+    device: string;
+    /**
+     * Browser
+     */
+    browser: string;
+    /**
+     * Os
+     */
+    os: string;
+    /**
+     * Device Type
+     */
+    device_type: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Last Seen At
+     */
+    last_seen_at: string;
+    /**
+     * Expires At
+     */
+    expires_at: string;
+    /**
+     * Revoked At
+     */
+    revoked_at: string | null;
+};
+
+/**
  * UserPublic
  */
 export type UserPublic = {
@@ -1630,6 +1776,22 @@ export type UsersUpdateAvatarMeResponses = {
 };
 
 export type UsersUpdateAvatarMeResponse = UsersUpdateAvatarMeResponses[keyof UsersUpdateAvatarMeResponses];
+
+export type UsersExportUserMeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/me/export';
+};
+
+export type UsersExportUserMeResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserDataExport;
+};
+
+export type UsersExportUserMeResponse = UsersExportUserMeResponses[keyof UsersExportUserMeResponses];
 
 export type UsersRevokeAllOtherSessionsData = {
     body?: never;
