@@ -16,10 +16,17 @@ from app.api.deps import (
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
+    Comment,
+    CommentLike,
     Message,
+    Post,
     UpdatePassword,
     User,
     UserCreate,
+    UserDataExport,
+    UserDataExportComment,
+    UserDataExportPost,
+    UserDataExportSession,
     UserPublic,
     UserRegister,
     UserSession,
@@ -27,6 +34,7 @@ from app.models import (
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
+    get_datetime_utc,
 )
 from app.services.sessions import (
     delete_user_sessions,
@@ -158,6 +166,47 @@ def read_user_me(current_user: CurrentUser) -> Any:
     Get current user.
     """
     return current_user
+
+
+@router.get("/me/export", response_model=UserDataExport)
+def export_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Export all data associated with the current user account.
+    """
+    comments = session.exec(
+        select(Comment)
+        .where(Comment.author_id == current_user.id)
+        .order_by(col(Comment.created_at))
+    ).all()
+
+    liked_comment_ids = list(
+        session.exec(
+            select(CommentLike.comment_id).where(
+                CommentLike.user_id == current_user.id
+            )
+        ).all()
+    )
+
+    posts = session.exec(
+        select(Post)
+        .where(Post.author_id == current_user.id)
+        .order_by(col(Post.created_at))
+    ).all()
+
+    sessions = session.exec(
+        select(UserSession)
+        .where(UserSession.user_id == current_user.id)
+        .order_by(col(UserSession.created_at))
+    ).all()
+
+    return UserDataExport(
+        exported_at=get_datetime_utc(),
+        profile=UserPublic.model_validate(current_user),
+        comments=[UserDataExportComment.model_validate(c) for c in comments],
+        liked_comment_ids=liked_comment_ids,
+        posts=[UserDataExportPost.model_validate(p) for p in posts],
+        sessions=[UserDataExportSession.model_validate(s) for s in sessions],
+    )
 
 
 @router.get("/me/sessions", response_model=UserSessionsPublic)
