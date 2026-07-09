@@ -5,10 +5,10 @@ import { Link, useNavigate } from "react-router";
 import {
   User, Shield, AlertTriangle, Camera, Eye, EyeOff,
   Monitor, Smartphone, Globe, LogOut, ArrowLeft, Loader2,
-  CheckCircle2, X, Check,
+  CheckCircle2, X, Check, Download,
 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
-import { type UserUpdateMe, type UpdatePassword, type UserSessionPublic, usersUpdateUserMe, usersUpdatePasswordMe, usersUpdateAvatarMe, usersReadUserSessions, usersRevokeSession } from "@/client";
+import { type UserUpdateMe, type UpdatePassword, type UserSessionPublic, usersUpdateUserMe, usersUpdatePasswordMe, usersUpdateAvatarMe, usersReadUserSessions, usersRevokeSession, usersExportUserMe } from "@/client";
 import { uploadAvatarImage } from "../../../lib/upload-image";
 import useCustomToast from "../../../hooks/useCustomToast";
 
@@ -728,10 +728,24 @@ function DeleteModal({ email, onCancel, onConfirm }: { email: string; onCancel: 
 
 /* ─── Danger Zone tab ─── */
 
+function downloadUserDataExport(data: unknown, email: string) {
+  const date = new Date().toISOString().slice(0, 10);
+  const safeEmail = email.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `user-data-export-${safeEmail}-${date}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 function DangerTab({ userEmail, onDelete }: { userEmail: string; onDelete: () => void }) {
   const [showModal, setShowModal] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const { logout, user } = useAuth();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
 
   // Prevent superuser from deleting themselves
   const isSuperuser = user?.role === "admin";
@@ -755,6 +769,22 @@ function DangerTab({ userEmail, onDelete }: { userEmail: string; onDelete: () =>
     setDeleted(true);
     logout();
     onDelete();
+  };
+
+  const handleExportData = async () => {
+    setExporting(true);
+    try {
+      const res = await usersExportUserMe({ throwOnError: true });
+      if (!res.data) {
+        throw new Error("No export data returned");
+      }
+      downloadUserDataExport(res.data, userEmail);
+      showSuccessToast("Your data has been downloaded");
+    } catch {
+      showErrorToast("Failed to export your data. Please try again.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -810,11 +840,34 @@ function DangerTab({ userEmail, onDelete }: { userEmail: string; onDelete: () =>
               </p>
             </div>
             <button
-              style={{ padding: "10px 20px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500, color: "rgba(255,255,255,0.65)", background: "transparent", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "9px", cursor: "pointer", flexShrink: 0, transition: "all 0.15s" }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.65)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
+              onClick={handleExportData}
+              disabled={exporting}
+              style={{
+                display: "flex", alignItems: "center", gap: "7px",
+                padding: "10px 20px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 500,
+                color: exporting ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.65)",
+                background: "transparent", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "9px",
+                cursor: exporting ? "default" : "pointer", flexShrink: 0, transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                if (!exporting) {
+                  e.currentTarget.style.color = "#fff";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!exporting) {
+                  e.currentTarget.style.color = "rgba(255,255,255,0.65)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+                }
+              }}
             >
-              Export data
+              {exporting ? (
+                <Loader2 size={15} style={{ animation: "spin 0.8s linear infinite" }} />
+              ) : (
+                <Download size={15} />
+              )}
+              {exporting ? "Exporting…" : "Export data"}
             </button>
           </div>
         </div>
