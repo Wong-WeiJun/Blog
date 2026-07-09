@@ -593,10 +593,7 @@ class TestR2Helpers:
         ):
             url = _public_url("covers/abc.jpg")
 
-        assert (
-            url
-            == "https://acct.r2.cloudflarestorage.com/my-bucket/covers/abc.jpg"
-        )
+        assert url == "https://acct.r2.cloudflarestorage.com/my-bucket/covers/abc.jpg"
 
     def test_public_url_public_base_trailing_slash_stripped(self):
         from app.core.r2 import _public_url
