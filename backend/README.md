@@ -58,7 +58,7 @@ backend/
 
 ### Uploads
 - Image uploads for user avatars and post cover images.
-- Supports S3/MinIO via `boto3`.
+- Supports Cloudflare R2 (S3-compatible API) via `boto3`.
 
 ### Auth
 - JWT-based authentication.
