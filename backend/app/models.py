@@ -34,6 +34,7 @@ class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = True
     is_superuser: bool = False
+    email_verified: bool = False
     full_name: str | None = Field(default=None, max_length=255)
     avatar_url: str | None = Field(default=None, max_length=1000)
 
@@ -41,6 +42,7 @@ class UserBase(SQLModel):
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=128)
+    email_verified: bool = True
 
 
 class UserRegister(SQLModel):
@@ -147,6 +149,10 @@ class UserSessionsPublic(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=128)
+
+
+class VerifyEmail(SQLModel):
+    token: str
 
 
 class Tag(SQLModel, table=True):
