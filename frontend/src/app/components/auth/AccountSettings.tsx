@@ -8,8 +8,8 @@ import {
   CheckCircle2, X, Check,
 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
-import { type UserUpdateMe, type UpdatePassword, usersUpdateUserMe, usersUpdatePasswordMe } from "@/client";
-import { usersUpdateAvatarMe, uploadsGetAvatarUploadUrl } from "@/client/sdk.gen";
+import { type UserUpdateMe, type UpdatePassword, usersUpdateUserMe, usersUpdatePasswordMe, usersUpdateAvatarMe } from "@/client";
+import { uploadAvatarImage } from "../../../lib/upload-image";
 import useCustomToast from "../../../hooks/useCustomToast";
 
 /* ─── types ─── */
@@ -150,29 +150,7 @@ async function uploadAvatarToR2(
   file: File,
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  const res = await uploadsGetAvatarUploadUrl({
-    body: { filename: file.name, content_type: file.type },
-    throwOnError: true,
-  });
-  const { url, fields, public_url } = res.data;
-
-  return new Promise((resolve, reject) => {
-    const fd = new FormData();
-    Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
-    fd.append("file", file);
-
-    const xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.onload = () => {
-      if (xhr.status === 204 || xhr.status === 200) resolve(public_url);
-      else reject(new Error(`Upload failed: ${xhr.status}`));
-    };
-    xhr.onerror = () => reject(new Error("Network error during upload"));
-    xhr.open("POST", url);
-    xhr.send(fd);
-  });
+  return uploadAvatarImage(file, onProgress);
 }
 
 function AvatarUpload({
