@@ -60,7 +60,9 @@ def login_access_token(
             expires_at=expires_at,
         )
     except Exception:
-        logger.exception("Failed to create user session; issuing token without session id")
+        logger.exception(
+            "Failed to create user session; issuing token without session id"
+        )
         jti = None
     return Token(
         access_token=security.create_access_token(

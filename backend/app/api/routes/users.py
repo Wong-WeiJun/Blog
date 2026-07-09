@@ -181,9 +181,7 @@ def export_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
 
     liked_comment_ids = list(
         session.exec(
-            select(CommentLike.comment_id).where(
-                CommentLike.user_id == current_user.id
-            )
+            select(CommentLike.comment_id).where(CommentLike.user_id == current_user.id)
         ).all()
     )
 
