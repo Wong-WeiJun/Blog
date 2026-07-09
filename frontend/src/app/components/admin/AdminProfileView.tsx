@@ -57,11 +57,11 @@ function Field({
   );
 }
 
-/* ──────────────────────── S3 avatar upload ────────────────────────── */
+/* ──────────────────────── R2 avatar upload ────────────────────────── */
 
 type AvatarUploadStatus = "idle" | "requesting" | "uploading" | "saving" | "done" | "error";
 
-async function uploadAvatarToS3(
+async function uploadAvatarToR2(
   file: File,
   onProgress: (pct: number) => void,
 ): Promise<string> {
@@ -83,7 +83,7 @@ async function uploadAvatarToS3(
     url: string; fields: Record<string, string>; public_url: string;
   };
 
-  // Step 2 — POST directly to S3 with presigned fields
+  // Step 2 — POST directly to R2 with presigned fields
   return new Promise((resolve, reject) => {
     const fd = new FormData();
     Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
@@ -95,7 +95,7 @@ async function uploadAvatarToS3(
     };
     xhr.onload = () => {
       if (xhr.status === 204 || xhr.status === 200) resolve(public_url);
-      else reject(new Error(`S3 upload failed: ${xhr.status}`));
+      else reject(new Error(`Upload failed: ${xhr.status}`));
     };
     xhr.onerror = () => reject(new Error("Network error during upload"));
     xhr.open("POST", url);
@@ -122,8 +122,7 @@ function AvatarUpload({
   const [hover, setHover]               = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Persists the public URL to the backend after S3 upload completes
-// Persists the public URL to the backend after S3 upload completes
+  // Persists the public URL to the backend after R2 upload completes
   const saveMutation = useMutation({
     mutationFn: async (avatarUrl: string | null) => {
       const res = await usersUpdateAvatarMe({ body: { avatar_url: avatarUrl } });
@@ -143,11 +142,12 @@ function AvatarUpload({
       onSaved(saved);
       // Invalidate so Navbar and any other consumer re-renders
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      queryClient.invalidateQueries({ queryKey: ["about"] });
       setUploadStatus("done");
       showSuccessToast("Profile picture updated.");
     },
     onError: () => {
-      setErrorMsg("Saved to S3 but failed to update your profile. Try again.");
+      setErrorMsg("Uploaded but failed to update your profile. Try again.");
       setUploadStatus("error");
       showErrorToast("Failed to save avatar URL.");
     },
@@ -173,7 +173,7 @@ function AvatarUpload({
 
     try {
       setUploadStatus("uploading");
-      const publicUrl = await uploadAvatarToS3(file, setProgress);
+      const publicUrl = await uploadAvatarToR2(file, setProgress);
       URL.revokeObjectURL(objectUrl);
       setLocalPreview(null);
       setUploadStatus("saving");
@@ -258,7 +258,7 @@ function AvatarUpload({
       <div style={{ display: "flex", flexDirection: "column", gap: "6px", paddingTop: "4px" }}>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", fontWeight: 600, color: "#fff", margin: 0 }}>Profile photo</p>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.78rem", color: "rgba(255,255,255,0.4)", margin: 0 }}>
-          JPEG, PNG, WebP · Max 5 MB · Uploads directly to S3
+          JPEG, PNG, WebP · Max 5 MB
         </p>
 
         {/* Status label */}
@@ -337,6 +337,7 @@ export function AdminProfileView() {
       usersUpdateUserMe({ body: { full_name: name } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      queryClient.invalidateQueries({ queryKey: ["about"] });
       showSuccessToast("Profile saved.");
     },
     onError: () => showErrorToast("Failed to save profile."),
