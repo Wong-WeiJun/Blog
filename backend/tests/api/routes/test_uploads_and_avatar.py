@@ -2,9 +2,9 @@
 Tests for:
   POST /api/v1/uploads/cover-image-url  — presigned cover upload URL
   POST /api/v1/uploads/avatar-url       — presigned avatar upload URL
-  PATCH /api/v1/users/me/avatar         — persist avatar URL after S3 upload
+  PATCH /api/v1/users/me/avatar         — persist avatar URL after R2 upload
 
-S3 calls are always mocked: we never hit AWS in tests.
+R2 calls are always mocked: we never hit Cloudflare in tests.
 """
 
 from unittest.mock import MagicMock, patch
@@ -22,33 +22,33 @@ SAVE_AVATAR_URL = f"{settings.API_V1_STR}/users/me/avatar"
 # ── fake presign response returned by the mocked boto3 client ────────
 
 _FAKE_PRESIGN = {
-    "url": "https://fake-bucket.s3.amazonaws.com/",
+    "url": "https://fake-account.r2.cloudflarestorage.com/fake-bucket",
     "fields": {
         "key": "covers/fake-uuid.jpg",
         "Content-Type": "image/jpeg",
-        "x-amz-credential": "FAKE/20260101/us-east-1/s3/aws4_request",
+        "x-amz-credential": "FAKE/20260101/auto/s3/aws4_request",
         "policy": "base64encodedpolicy",
         "x-amz-signature": "fakesig",
     },
 }
 
-_S3_ENABLED_SETTINGS = {
-    "AWS_ACCESS_KEY_ID": "FAKEID",
-    "AWS_SECRET_ACCESS_KEY": "FAKESECRET",
-    "AWS_S3_BUCKET": "fake-bucket",
-    "AWS_S3_REGION": "us-east-1",
-    "AWS_S3_CDN_URL": None,
+_R2_ENABLED_SETTINGS = {
+    "R2_ACCOUNT_ID": "fake-account",
+    "R2_ACCESS_KEY_ID": "FAKEID",
+    "R2_SECRET_ACCESS_KEY": "FAKESECRET",
+    "R2_BUCKET": "fake-bucket",
+    "R2_PUBLIC_URL": None,
 }
 
 
-def _s3_mock():
-    """Context manager: patches settings to enable S3 + mocks the boto3 client."""
+def _r2_mock():
+    """Context manager: patches settings to enable R2 + mocks the boto3 client."""
     boto3_client = MagicMock()
     boto3_client.generate_presigned_post.return_value = _FAKE_PRESIGN
 
     patches = [
-        patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-        patch("app.core.s3._client", return_value=boto3_client),
+        patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+        patch("app.core.r2._client", return_value=boto3_client),
     ]
     return patches
 
@@ -74,14 +74,15 @@ class TestCoverImageUrl:
         )
         assert r.status_code == 401
 
-    def test_returns_503_when_s3_not_configured(
+    def test_returns_503_when_r2_not_configured(
         self, client: TestClient, superuser_token_headers: dict[str, str]
     ):
         with patch.multiple(
             "app.core.config.settings",
-            AWS_ACCESS_KEY_ID=None,
-            AWS_SECRET_ACCESS_KEY=None,
-            AWS_S3_BUCKET=None,
+            R2_ACCOUNT_ID=None,
+            R2_ACCESS_KEY_ID=None,
+            R2_SECRET_ACCESS_KEY=None,
+            R2_BUCKET=None,
         ):
             r = client.post(
                 COVER_URL,
@@ -89,17 +90,17 @@ class TestCoverImageUrl:
                 headers=superuser_token_headers,
             )
             assert r.status_code == 503
-            assert "S3 is not configured" in r.json()["detail"]
+            assert "R2 object storage is not configured" in r.json()["detail"]
 
-    def test_returns_presign_when_s3_configured(
+    def test_returns_presign_when_r2_configured(
         self, client: TestClient, superuser_token_headers: dict[str, str]
     ):
         boto_mock = MagicMock()
         boto_mock.generate_presigned_post.return_value = _FAKE_PRESIGN
 
         with (
-            patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             r = client.post(
                 COVER_URL,
@@ -138,8 +139,8 @@ class TestCoverImageUrl:
         boto_mock.generate_presigned_post.return_value = _FAKE_PRESIGN
 
         with (
-            patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             r = client.post(
                 COVER_URL,
@@ -157,8 +158,8 @@ class TestCoverImageUrl:
         boto_mock.generate_presigned_post.return_value = _FAKE_PRESIGN
 
         with (
-            patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             r = client.post(
                 COVER_URL,
@@ -172,19 +173,19 @@ class TestCoverImageUrl:
         assert r.status_code == 422
         assert "Unsupported image type" in r.json()["detail"]
 
-    def test_public_url_uses_cdn_when_configured(
+    def test_public_url_uses_public_base_when_configured(
         self, client: TestClient, superuser_token_headers: dict[str, str]
     ):
         boto_mock = MagicMock()
         boto_mock.generate_presigned_post.return_value = _FAKE_PRESIGN
-        cdn = "https://d1234abcdef.cloudfront.net"
+        public_base = "https://cdn.example.com"
 
         with (
             patch.multiple(
                 "app.core.config.settings",
-                **{**_S3_ENABLED_SETTINGS, "AWS_S3_CDN_URL": cdn},
+                **{**_R2_ENABLED_SETTINGS, "R2_PUBLIC_URL": public_base},
             ),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             r = client.post(
                 COVER_URL,
@@ -193,17 +194,17 @@ class TestCoverImageUrl:
             )
 
         assert r.status_code == 200
-        assert r.json()["public_url"].startswith(cdn)
+        assert r.json()["public_url"].startswith(public_base)
 
-    def test_public_url_uses_s3_domain_when_no_cdn(
+    def test_public_url_uses_r2_endpoint_when_no_public_base(
         self, client: TestClient, superuser_token_headers: dict[str, str]
     ):
         boto_mock = MagicMock()
         boto_mock.generate_presigned_post.return_value = _FAKE_PRESIGN
 
         with (
-            patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             r = client.post(
                 COVER_URL,
@@ -212,7 +213,7 @@ class TestCoverImageUrl:
             )
 
         assert r.status_code == 200
-        assert "s3.amazonaws.com" in r.json()["public_url"]
+        assert "r2.cloudflarestorage.com" in r.json()["public_url"]
         assert "covers/" in r.json()["public_url"]
 
     def test_content_type_guessed_from_filename_when_blank(
@@ -223,8 +224,8 @@ class TestCoverImageUrl:
         boto_mock.generate_presigned_post.return_value = _FAKE_PRESIGN
 
         with (
-            patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             r = client.post(
                 COVER_URL,
@@ -254,8 +255,8 @@ class TestAvatarUrl:
         boto_mock.generate_presigned_post.return_value = _FAKE_PRESIGN
 
         with (
-            patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             r = client.post(
                 AVATAR_URL,
@@ -272,8 +273,8 @@ class TestAvatarUrl:
         boto_mock.generate_presigned_post.return_value = _FAKE_PRESIGN
 
         with (
-            patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             r = client.post(
                 AVATAR_URL,
@@ -299,8 +300,8 @@ class TestAvatarUrl:
         boto_mock.generate_presigned_post.return_value = _FAKE_PRESIGN
 
         with (
-            patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             r = client.post(
                 AVATAR_URL,
@@ -312,14 +313,15 @@ class TestAvatarUrl:
         key = r.json()["key"]
         assert key.startswith(f"avatars/{user.id}/")
 
-    def test_returns_503_when_s3_not_configured(
+    def test_returns_503_when_r2_not_configured(
         self, client: TestClient, normal_user_token_headers: dict[str, str]
     ):
         with patch.multiple(
             "app.core.config.settings",
-            AWS_ACCESS_KEY_ID=None,
-            AWS_SECRET_ACCESS_KEY=None,
-            AWS_S3_BUCKET=None,
+            R2_ACCOUNT_ID=None,
+            R2_ACCESS_KEY_ID=None,
+            R2_SECRET_ACCESS_KEY=None,
+            R2_BUCKET=None,
         ):
             r = client.post(
                 AVATAR_URL,
@@ -335,8 +337,8 @@ class TestAvatarUrl:
         boto_mock.generate_presigned_post.return_value = _FAKE_PRESIGN
 
         with (
-            patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             r = client.post(
                 AVATAR_URL,
@@ -357,8 +359,8 @@ class TestAvatarUrl:
 
         keys = []
         with (
-            patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             for _ in range(3):
                 r = client.post(
@@ -378,8 +380,8 @@ class TestAvatarUrl:
         boto_mock.generate_presigned_post.return_value = _FAKE_PRESIGN
 
         with (
-            patch.multiple("app.core.config.settings", **_S3_ENABLED_SETTINGS),
-            patch("app.core.s3._client", return_value=boto_mock),
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
         ):
             r = client.post(
                 AVATAR_URL,
@@ -401,7 +403,7 @@ class TestSaveAvatar:
         db: Session,
         normal_user_token_headers: dict[str, str],
     ):
-        url = "https://fake-bucket.s3.amazonaws.com/avatars/user-id/abc.jpg"
+        url = "https://cdn.example.com/avatars/user-id/abc.jpg"
         r = client.patch(
             SAVE_AVATAR_URL,
             json={"avatar_url": url},
@@ -425,7 +427,7 @@ class TestSaveAvatar:
         normal_user_token_headers: dict[str, str],
     ):
         # First set it
-        url = "https://fake-bucket.s3.amazonaws.com/avatars/user-id/to-remove.jpg"
+        url = "https://cdn.example.com/avatars/user-id/to-remove.jpg"
         client.patch(
             SAVE_AVATAR_URL,
             json={"avatar_url": url},
@@ -460,7 +462,7 @@ class TestSaveAvatar:
         db: Session,
         superuser_token_headers: dict[str, str],
     ):
-        url = "https://fake-bucket.s3.amazonaws.com/avatars/su/pic.png"
+        url = "https://cdn.example.com/avatars/su/pic.png"
         r = client.patch(
             SAVE_AVATAR_URL,
             json={"avatar_url": url},
@@ -506,48 +508,46 @@ class TestSaveAvatar:
         assert r.json()["avatar_url"] == url
 
 
-# ──────────────────────── s3 unit tests ─────────────────────────────
+# ──────────────────────── r2 unit tests ─────────────────────────────
 
 
-class TestS3Helpers:
-    """Pure unit tests for app.core.s3 — no HTTP, no fixtures needed."""
+class TestR2Helpers:
+    """Pure unit tests for app.core.r2 — no HTTP, no fixtures needed."""
 
     def test_generate_cover_key_format(self):
-        from app.core.s3 import generate_cover_key
+        from app.core.r2 import generate_cover_key
 
         key = generate_cover_key("photo.jpg")
         assert key.startswith("covers/")
         assert key.endswith(".jpg")
-        # UUID4 part has 36 chars between covers/ and .jpg
         uuid_part = key[len("covers/") : -len(".jpg")]
         import uuid
 
-        uuid.UUID(uuid_part)  # raises ValueError if not a valid UUID
+        uuid.UUID(uuid_part)
 
     def test_generate_cover_key_unknown_ext_defaults_to_jpg(self):
-        from app.core.s3 import generate_cover_key
+        from app.core.r2 import generate_cover_key
 
         key = generate_cover_key("photo.bmp")
         assert key.endswith(".jpg")
 
     def test_generate_cover_key_no_ext_defaults_to_jpg(self):
-        from app.core.s3 import generate_cover_key
+        from app.core.r2 import generate_cover_key
 
         key = generate_cover_key("photonoext")
         assert key.endswith(".jpg")
 
     @pytest.mark.parametrize("ext", ["jpg", "jpeg", "png", "webp", "gif", "avif"])
     def test_generate_cover_key_safelisted_extensions(self, ext: str):
-        from app.core.s3 import generate_cover_key
+        from app.core.r2 import generate_cover_key
 
         key = generate_cover_key(f"photo.{ext}")
-        # jpeg normalises to jpg or jpeg depending on input
         assert key.split(".")[-1] == ext
 
     def test_generate_avatar_key_format(self):
         import uuid
 
-        from app.core.s3 import generate_avatar_key
+        from app.core.r2 import generate_avatar_key
 
         user_id = str(uuid.uuid4())
         key = generate_avatar_key(user_id, "me.png")
@@ -557,65 +557,55 @@ class TestS3Helpers:
     def test_generate_avatar_key_unique_per_call(self):
         import uuid
 
-        from app.core.s3 import generate_avatar_key
+        from app.core.r2 import generate_avatar_key
 
         uid = str(uuid.uuid4())
         keys = {generate_avatar_key(uid, "me.jpg") for _ in range(10)}
         assert len(keys) == 10
 
     def test_generate_avatar_key_unknown_ext_defaults_to_jpg(self):
-        from app.core.s3 import generate_avatar_key
+        from app.core.r2 import generate_avatar_key
 
         key = generate_avatar_key("user-123", "selfie.tiff")
         assert key.endswith(".jpg")
 
-    def test_public_url_no_cdn_us_east_1(self):
-        from app.core.s3 import _public_url
+    def test_public_url_with_public_base(self):
+        from app.core.r2 import _public_url
 
         with patch.multiple(
             "app.core.config.settings",
-            AWS_S3_BUCKET="my-bucket",
-            AWS_S3_REGION="us-east-1",
-            AWS_S3_CDN_URL=None,
-        ):
-            url = _public_url("covers/abc.jpg")
-
-        assert url == "https://my-bucket.s3.amazonaws.com/covers/abc.jpg"
-
-    def test_public_url_no_cdn_other_region(self):
-        from app.core.s3 import _public_url
-
-        with patch.multiple(
-            "app.core.config.settings",
-            AWS_S3_BUCKET="my-bucket",
-            AWS_S3_REGION="ap-southeast-1",
-            AWS_S3_CDN_URL=None,
-        ):
-            url = _public_url("covers/abc.jpg")
-
-        assert url == "https://my-bucket.s3.ap-southeast-1.amazonaws.com/covers/abc.jpg"
-
-    def test_public_url_with_cdn(self):
-        from app.core.s3 import _public_url
-
-        with patch.multiple(
-            "app.core.config.settings",
-            AWS_S3_BUCKET="my-bucket",
-            AWS_S3_REGION="us-east-1",
-            AWS_S3_CDN_URL="https://d1234abcdef.cloudfront.net",
+            R2_ACCOUNT_ID="acct",
+            R2_BUCKET="my-bucket",
+            R2_PUBLIC_URL="https://cdn.example.com",
         ):
             url = _public_url("avatars/uid/pic.jpg")
 
-        assert url == "https://d1234abcdef.cloudfront.net/avatars/uid/pic.jpg"
+        assert url == "https://cdn.example.com/avatars/uid/pic.jpg"
 
-    def test_public_url_cdn_trailing_slash_stripped(self):
-        from app.core.s3 import _public_url
+    def test_public_url_without_public_base(self):
+        from app.core.r2 import _public_url
 
         with patch.multiple(
             "app.core.config.settings",
-            AWS_S3_BUCKET="b",
-            AWS_S3_REGION="us-east-1",
-            AWS_S3_CDN_URL="https://cdn.example.com/",
+            R2_ACCOUNT_ID="acct",
+            R2_BUCKET="my-bucket",
+            R2_PUBLIC_URL=None,
+        ):
+            url = _public_url("covers/abc.jpg")
+
+        assert (
+            url
+            == "https://acct.r2.cloudflarestorage.com/my-bucket/covers/abc.jpg"
+        )
+
+    def test_public_url_public_base_trailing_slash_stripped(self):
+        from app.core.r2 import _public_url
+
+        with patch.multiple(
+            "app.core.config.settings",
+            R2_ACCOUNT_ID="acct",
+            R2_BUCKET="b",
+            R2_PUBLIC_URL="https://cdn.example.com/",
         ):
             url = _public_url("covers/x.jpg")
 
@@ -623,18 +613,18 @@ class TestS3Helpers:
         assert url == "https://cdn.example.com/covers/x.jpg"
 
     def test_guess_content_type_jpeg(self):
-        from app.core.s3 import guess_content_type
+        from app.core.r2 import guess_content_type
 
         assert guess_content_type("photo.jpg") == "image/jpeg"
         assert guess_content_type("photo.jpeg") == "image/jpeg"
 
     def test_guess_content_type_png(self):
-        from app.core.s3 import guess_content_type
+        from app.core.r2 import guess_content_type
 
         assert guess_content_type("image.png") == "image/png"
 
     def test_guess_content_type_unknown_falls_back(self):
-        from app.core.s3 import guess_content_type
+        from app.core.r2 import guess_content_type
 
         ct = guess_content_type("file.unknown123")
         assert ct == "application/octet-stream"
