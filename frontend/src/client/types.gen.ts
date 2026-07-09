@@ -1116,6 +1116,10 @@ export type UserCreate = {
      */
     is_superuser?: boolean;
     /**
+     * Email Verified
+     */
+    email_verified?: boolean;
+    /**
      * Full Name
      */
     full_name?: string | null;
@@ -1292,6 +1296,10 @@ export type UserPublic = {
      */
     is_superuser?: boolean;
     /**
+     * Email Verified
+     */
+    email_verified?: boolean;
+    /**
      * Full Name
      */
     full_name?: string | null;
@@ -1396,6 +1404,10 @@ export type UserUpdate = {
      */
     is_superuser?: boolean;
     /**
+     * Email Verified
+     */
+    email_verified?: boolean;
+    /**
      * Full Name
      */
     full_name?: string | null;
@@ -1467,6 +1479,16 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * VerifyEmail
+ */
+export type VerifyEmail = {
+    /**
+     * Token
+     */
+    token: string;
 };
 
 export type LoginLoginAccessTokenData = {
@@ -1580,6 +1602,61 @@ export type LoginResetPasswordResponses = {
 };
 
 export type LoginResetPasswordResponse = LoginResetPasswordResponses[keyof LoginResetPasswordResponses];
+
+export type LoginVerifyEmailData = {
+    body: VerifyEmail;
+    path?: never;
+    query?: never;
+    url: '/api/v1/verify-email/';
+};
+
+export type LoginVerifyEmailErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type LoginVerifyEmailError = LoginVerifyEmailErrors[keyof LoginVerifyEmailErrors];
+
+export type LoginVerifyEmailResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type LoginVerifyEmailResponse = LoginVerifyEmailResponses[keyof LoginVerifyEmailResponses];
+
+export type LoginResendVerificationEmailData = {
+    body?: never;
+    path: {
+        /**
+         * Email
+         */
+        email: string;
+    };
+    query?: never;
+    url: '/api/v1/resend-verification/{email}';
+};
+
+export type LoginResendVerificationEmailErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type LoginResendVerificationEmailError = LoginResendVerificationEmailErrors[keyof LoginResendVerificationEmailErrors];
+
+export type LoginResendVerificationEmailResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type LoginResendVerificationEmailResponse = LoginResendVerificationEmailResponses[keyof LoginResendVerificationEmailResponses];
 
 export type LoginRecoverPasswordHtmlContentData = {
     body?: never;
