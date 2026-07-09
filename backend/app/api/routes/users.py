@@ -29,6 +29,7 @@ from app.models import (
     UserUpdateMe,
 )
 from app.services.sessions import (
+    delete_user_sessions,
     get_active_sessions,
     revoke_other_sessions,
     revoke_user_session,
@@ -224,6 +225,7 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
+    delete_user_sessions(session=session, user_id=current_user.id)
     session.delete(current_user)
     session.commit()
     return Message(message="User deleted successfully")
@@ -311,6 +313,7 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
+    delete_user_sessions(session=session, user_id=user.id)
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")
