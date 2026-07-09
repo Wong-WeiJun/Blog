@@ -10,6 +10,7 @@ import { CommentsView } from "./CommentsView";
 import { AnalyticsView } from "./AnalyticsView";
 import { TagsView } from "./TagsView";
 import { ProjectsView } from "./ProjectsView";
+import { AboutEditorView } from "./AboutEditorView";
 import { useState } from "react";
 import type { PostResponse } from "@/client/types.gen";
 
@@ -84,6 +85,7 @@ export function AdminDashboard() {
           {view === "comments"  && <CommentsView />}
           {view === "tags"      && <TagsView />}
           {view === "analytics" && <AnalyticsView />}
+          {view === "about"     && <AboutEditorView onNavigateToProfile={() => setView("profile")} />}
         </main>
       </div>
     </div>
