@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
+    about,
     admin,
     comments,
     contact,
@@ -24,6 +25,7 @@ api_router.include_router(posts.router, prefix="/posts")
 api_router.include_router(uploads.router, prefix="/uploads")
 api_router.include_router(tags.router, prefix="/tags")
 api_router.include_router(projects.router, prefix="/projects")
+api_router.include_router(about.router, prefix="/about")
 api_router.include_router(comments.router)
 api_router.include_router(contact.router, prefix="/contact")
 api_router.include_router(admin.router, prefix="/admin")
