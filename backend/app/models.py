@@ -306,6 +306,50 @@ class CommentLike(SQLModel, table=True):
     user_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
 
 
+class UserDataExportComment(SQLModel):
+    id: uuid.UUID
+    post_id: uuid.UUID
+    parent_id: uuid.UUID | None
+    body: str
+    created_at: datetime
+
+
+class UserDataExportPost(SQLModel):
+    id: uuid.UUID
+    slug: str
+    title: str
+    excerpt: str
+    content: str
+    status: PostStatus
+    featured: bool
+    cover_image_url: str | None
+    view_count: int
+    published_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class UserDataExportSession(SQLModel):
+    id: uuid.UUID
+    device: str
+    browser: str
+    os: str
+    device_type: str
+    created_at: datetime
+    last_seen_at: datetime
+    expires_at: datetime
+    revoked_at: datetime | None
+
+
+class UserDataExport(SQLModel):
+    exported_at: datetime
+    profile: UserPublic
+    comments: list[UserDataExportComment]
+    liked_comment_ids: list[uuid.UUID]
+    posts: list[UserDataExportPost]
+    sessions: list[UserDataExportSession]
+
+
 class CommentCreate(SQLModel):
     body: str = Field(min_length=1, max_length=2000)
 
