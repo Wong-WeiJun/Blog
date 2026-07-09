@@ -101,6 +101,47 @@ class Token(SQLModel):
 # Contents of JWT token
 class TokenPayload(SQLModel):
     sub: str | None = None
+    jti: str | None = None
+
+
+class UserSession(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    user_agent: str | None = Field(default=None, max_length=512)
+    ip_address: str | None = Field(default=None, max_length=45)
+    device: str = Field(max_length=100)
+    browser: str = Field(max_length=100)
+    os: str = Field(max_length=100)
+    device_type: str = Field(max_length=20)
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    last_seen_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    expires_at: datetime = Field(sa_type=DateTime(timezone=True))  # type: ignore
+    revoked_at: datetime | None = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+class UserSessionPublic(SQLModel):
+    id: uuid.UUID
+    device: str
+    browser: str
+    os: str
+    location: str
+    device_type: str
+    is_current: bool
+    last_seen_at: datetime
+    created_at: datetime
+
+
+class UserSessionsPublic(SQLModel):
+    data: list[UserSessionPublic]
 
 
 class NewPassword(SQLModel):
