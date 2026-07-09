@@ -1,6 +1,6 @@
 import { useState, type ComponentPropsWithoutRef } from "react";
 import { useNavigate, Link } from "react-router";
-import { Eye, Clock, ArrowLeft, Bookmark, Twitter, Link2 } from "lucide-react";
+import { Eye, Clock, ArrowLeft, Link2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -12,7 +12,6 @@ import type { PostResponse } from "../../client/types.gen";
 
 export function BlogPost({ post }: { post: PostResponse }) {
   const navigate = useNavigate();
-  const [bookmarked, setBookmarked] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = () => {
