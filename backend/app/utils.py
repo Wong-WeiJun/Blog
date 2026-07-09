@@ -96,6 +96,23 @@ def generate_reset_password_email(email_to: str, email: str, token: str) -> Emai
     return EmailData(html_content=html_content, subject=subject)
 
 
+def generate_verify_email(email_to: str, email: str, token: str) -> EmailData:
+    project_name = settings.PROJECT_NAME
+    subject = f"{project_name} - Verify your email"
+    link = f"{settings.FRONTEND_HOST}/verify-email?token={token}"
+    html_content = render_email_template(
+        template_name="verify_email.html",
+        context={
+            "project_name": settings.PROJECT_NAME,
+            "username": email,
+            "email": email_to,
+            "valid_hours": settings.EMAIL_VERIFY_TOKEN_EXPIRE_HOURS,
+            "link": link,
+        },
+    )
+    return EmailData(html_content=html_content, subject=subject)
+
+
 def generate_new_account_email(
     email_to: str, username: str, password: str
 ) -> EmailData:
@@ -132,6 +149,46 @@ def verify_password_reset_token(token: str) -> str | None:
         decoded_token = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
+        if decoded_token.get("type") not in (None, "password_reset"):
+            return None
         return str(decoded_token["sub"])
     except InvalidTokenError:
         return None
+
+
+def generate_email_verification_token(email: str) -> str:
+    delta = timedelta(hours=settings.EMAIL_VERIFY_TOKEN_EXPIRE_HOURS)
+    now = datetime.now(timezone.utc)
+    expires = now + delta
+    exp = expires.timestamp()
+    encoded_jwt = jwt.encode(
+        {"exp": exp, "nbf": now, "sub": email, "type": "email_verify"},
+        settings.SECRET_KEY,
+        algorithm=security.ALGORITHM,
+    )
+    return encoded_jwt
+
+
+def verify_email_verification_token(token: str) -> str | None:
+    try:
+        decoded_token = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+        if decoded_token.get("type") != "email_verify":
+            return None
+        return str(decoded_token["sub"])
+    except InvalidTokenError:
+        return None
+
+
+def email_delivery_enabled() -> bool:
+    return settings.emails_enabled or settings.resend_enabled
+
+
+def send_verification_email(*, email_to: str, email: str, token: str) -> None:
+    email_data = generate_verify_email(email_to=email_to, email=email, token=token)
+    send_email(
+        email_to=email_to,
+        subject=email_data.subject,
+        html_content=email_data.html_content,
+    )
