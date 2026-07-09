@@ -22,6 +22,15 @@ def parse_cors(v: Any) -> list[str] | str:
     raise ValueError(v)
 
 
+def normalize_database_url(url: str) -> str:
+    """Convert a Postgres URL to SQLAlchemy's psycopg driver form."""
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+    return url
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         # Use top level .env file (one level above ./backend/)
@@ -48,15 +57,21 @@ class Settings(BaseSettings):
         ]
 
     PROJECT_NAME: str
-    POSTGRES_SERVER: str
+    # Use DATABASE_URL for hosted Postgres (e.g. Neon). POSTGRES_* is for local Docker.
+    DATABASE_URL: str | None = None
+    POSTGRES_SERVER: str = ""
     POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str
+    POSTGRES_USER: str = ""
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
+        if self.DATABASE_URL:
+            return PostgresDsn(normalize_database_url(self.DATABASE_URL))
+        if not self.POSTGRES_SERVER:
+            raise ValueError("Either DATABASE_URL or POSTGRES_SERVER must be set")
         return PostgresDsn.build(
             scheme="postgresql+psycopg",
             username=self.POSTGRES_USER,
@@ -106,7 +121,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> Self:
         self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-        self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
+        if not self.DATABASE_URL:
+            self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
@@ -115,19 +131,22 @@ class Settings(BaseSettings):
 
     DEFAULT_PAGE_SIZE: int = 10
 
-    # S3 / cover image uploads
-    AWS_ACCESS_KEY_ID: str | None = None
-    AWS_SECRET_ACCESS_KEY: str | None = None
-    AWS_S3_REGION: str = "us-east-1"
-    AWS_S3_BUCKET: str | None = None
-    # Optional: CloudFront or custom domain. If omitted the standard S3 URL is used.
-    AWS_S3_CDN_URL: str | None = None
+    # Cloudflare R2 object storage (S3-compatible API)
+    R2_ACCOUNT_ID: str | None = None
+    R2_ACCESS_KEY_ID: str | None = None
+    R2_SECRET_ACCESS_KEY: str | None = None
+    R2_BUCKET: str | None = None
+    # Public base URL — custom domain or r2.dev subdomain (e.g. https://pub-xxx.r2.dev)
+    R2_PUBLIC_URL: str | None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def s3_enabled(self) -> bool:
+    def r2_enabled(self) -> bool:
         return bool(
-            self.AWS_ACCESS_KEY_ID and self.AWS_SECRET_ACCESS_KEY and self.AWS_S3_BUCKET
+            self.R2_ACCOUNT_ID
+            and self.R2_ACCESS_KEY_ID
+            and self.R2_SECRET_ACCESS_KEY
+            and self.R2_BUCKET
         )
 
     RESEND_KEY: str | None = None
