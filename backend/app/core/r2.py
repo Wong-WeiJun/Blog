@@ -105,6 +105,20 @@ def presign_upload(
     return {**response, "public_url": public_url}
 
 
+def upload_object(key: str, content_type: str, data: bytes) -> str:
+    """Upload bytes to R2 server-side and return the public URL."""
+    from app.core.config import settings
+
+    client = _client()
+    client.put_object(
+        Bucket=settings.R2_BUCKET,
+        Key=key,
+        Body=data,
+        ContentType=content_type,
+    )
+    return _public_url(key)
+
+
 def _public_url(key: str) -> str:
     """Construct the public URL for an already-uploaded object."""
     from app.core.config import settings
