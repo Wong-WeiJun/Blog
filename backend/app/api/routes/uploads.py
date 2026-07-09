@@ -1,5 +1,5 @@
 """
-Upload endpoints — presigned S3 URLs for browser-direct uploads.
+Upload endpoints — presigned Cloudflare R2 URLs for browser-direct uploads.
 
 POST /api/v1/uploads/cover-image-url   → presigned URL for post cover images
 POST /api/v1/uploads/avatar-url        → presigned URL for user profile pictures
@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 from app.api.deps import CurrentUser, get_current_active_superuser
 from app.core.config import settings
-from app.core.s3 import (
+from app.core.r2 import (
     generate_avatar_key,
     generate_cover_key,
     guess_content_type,
@@ -63,13 +63,13 @@ def _validated_content_type(body: PresignRequest) -> str:
 
 
 def _do_presign(key: str, ct: str, max_bytes: int) -> PresignResponse:
-    if not settings.s3_enabled:
+    if not settings.r2_enabled:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="S3 is not configured on this server.",
+            detail="R2 object storage is not configured on this server.",
         )
     try:
-        from app.core.s3 import presign_upload as _presign  # noqa: F401
+        from app.core.r2 import presign_upload as _presign  # noqa: F401
 
         result = presign_upload(key, ct, max_bytes=max_bytes)
     except ImportError:
@@ -94,7 +94,7 @@ def _do_presign(key: str, ct: str, max_bytes: int) -> PresignResponse:
     "/cover-image-url",
     dependencies=[Depends(get_current_active_superuser)],
     response_model=PresignResponse,
-    summary="Get a presigned S3 URL to upload a post cover image (admin only)",
+    summary="Get a presigned R2 URL to upload a post cover image (admin only)",
 )
 def get_cover_image_upload_url(body: PresignRequest) -> PresignResponse:
     ct = _validated_content_type(body)
@@ -105,7 +105,7 @@ def get_cover_image_upload_url(body: PresignRequest) -> PresignResponse:
 @router.post(
     "/avatar-url",
     response_model=PresignResponse,
-    summary="Get a presigned S3 URL to upload a profile picture (any logged-in user)",
+    summary="Get a presigned R2 URL to upload a profile picture (any logged-in user)",
 )
 def get_avatar_upload_url(
     body: PresignRequest,
