@@ -1,6 +1,7 @@
 import {
   loginRecoverPassword,
   loginResetPassword,
+  loginLogout,
   type BodyLoginLoginAccessToken,
   type UserPublic,
   type UserRegister,
@@ -70,12 +71,23 @@ const useAuth = () => {
   });
 
   const logout = () => {
-    localStorage.removeItem("access_token");
-    client.setConfig({
-      auth: () => undefined,
-    });
-    queryClient.clear();
-    navigate("/");
+    const doLogout = async () => {
+      try {
+        if (isLoggedIn()) {
+          await loginLogout({ throwOnError: true });
+        }
+      } catch {
+        // Legacy tokens without a session id may not revoke server-side.
+      } finally {
+        localStorage.removeItem("access_token");
+        client.setConfig({
+          auth: () => undefined,
+        });
+        queryClient.clear();
+        navigate("/");
+      }
+    };
+    void doLogout();
   };
 
   const recoverPasswordMutation = useMutation({
