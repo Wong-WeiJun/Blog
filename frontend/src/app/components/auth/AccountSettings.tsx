@@ -146,7 +146,7 @@ function SectionDesc({ children }: { children: ReactNode }) {
 
 type AvatarUploadStatus = "idle" | "requesting" | "uploading" | "saving" | "done" | "error";
 
-async function uploadAvatarToS3(
+async function uploadAvatarToR2(
   file: File,
   onProgress: (pct: number) => void,
 ): Promise<string> {
@@ -178,7 +178,7 @@ async function uploadAvatarToS3(
     };
     xhr.onload = () => {
       if (xhr.status === 204 || xhr.status === 200) resolve(public_url);
-      else reject(new Error(`S3 upload failed: ${xhr.status}`));
+      else reject(new Error(`Upload failed: ${xhr.status}`));
     };
     xhr.onerror = () => reject(new Error("Network error during upload"));
     xhr.open("POST", url);
@@ -215,11 +215,12 @@ function AvatarUpload({
       const saved = (res.data as any)?.avatar_url ?? null;
       onSaved(saved);
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      queryClient.invalidateQueries({ queryKey: ["about"] });
       setUploadStatus("done");
       showSuccessToast("Profile picture updated.");
     },
     onError: () => {
-      setErrorMsg("Saved to S3 but failed to update your profile. Try again.");
+      setErrorMsg("Uploaded but failed to update your profile. Try again.");
       setUploadStatus("error");
       showErrorToast("Failed to save avatar URL.");
     },
@@ -245,7 +246,7 @@ function AvatarUpload({
 
     try {
       setUploadStatus("uploading");
-      const publicUrl = await uploadAvatarToS3(file, setProgress);
+      const publicUrl = await uploadAvatarToR2(file, setProgress);
       URL.revokeObjectURL(objectUrl);
       setLocalPreview(null);
       setUploadStatus("saving");
@@ -409,6 +410,7 @@ function ProfileTab({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
     mutationFn: (data: UserUpdateMe) => usersUpdateUserMe({ body: data, throwOnError: true }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      queryClient.invalidateQueries({ queryKey: ["about"] });
       showSuccessToast("Profile updated successfully");
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
