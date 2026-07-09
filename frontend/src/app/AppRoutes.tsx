@@ -12,6 +12,7 @@ import { ContactPage } from "./components/ContactPage";
 import { ProjectsPage } from "./components/ProjectsPage";
 import { AuthPages } from "./components/auth/AuthPages";
 import { ResetPasswordPage } from "./components/auth/ResetPasswordPage";
+import { VerifyEmailPage } from "./components/auth/VerifyEmailPage";
 import { AccountSettings } from "./components/auth/AccountSettings";
 import { TextPage } from "./components/TextPage";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
@@ -49,6 +50,7 @@ export function AppRoutes() {
           </Route>
           <Route path="auth" element={<AuthPages />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
+          <Route path="verify-email" element={<VerifyEmailPage />} />
           <Route path="settings" element={<AccountSettings />} />
           <Route element={<RequireAdmin />}>
             <Route path="admin/*" element={<AdminDashboard />} />
