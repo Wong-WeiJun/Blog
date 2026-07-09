@@ -107,25 +107,11 @@ export function BlogPost({ post }: { post: PostResponse }) {
             {/* Share buttons */}
             <div style={{ display: "flex", gap: "6px" }}>
               <button
-                title="Share on Twitter (coming soon)"
-                disabled
-                style={{ padding: "7px", borderRadius: "7px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", cursor: "default", color: "rgba(255,255,255,0.25)", opacity: 0.5 }}
-              >
-                <Twitter size={14} />
-              </button>
-              <button
                 title={copied ? "Copied!" : "Copy link"}
                 onClick={handleCopyLink}
                 style={{ padding: "7px", borderRadius: "7px", background: copied ? "rgba(80,70,229,0.2)" : "rgba(255,255,255,0.05)", border: `1px solid ${copied ? "rgba(80,70,229,0.4)" : "rgba(255,255,255,0.09)"}`, cursor: "pointer", color: copied ? "#a5b4fc" : "rgba(255,255,255,0.45)", transition: "all 0.15s" }}
               >
                 <Link2 size={14} />
-              </button>
-              <button
-                title={bookmarked ? "Remove bookmark" : "Bookmark"}
-                onClick={() => setBookmarked((b) => !b)}
-                style={{ padding: "7px", borderRadius: "7px", background: bookmarked ? "rgba(80,70,229,0.2)" : "rgba(255,255,255,0.05)", border: `1px solid ${bookmarked ? "rgba(80,70,229,0.4)" : "rgba(255,255,255,0.09)"}`, cursor: "pointer", color: bookmarked ? "#a5b4fc" : "rgba(255,255,255,0.45)", transition: "all 0.15s" }}
-              >
-                <Bookmark size={14} fill={bookmarked ? "#a5b4fc" : "none"} />
               </button>
             </div>
           </div>
