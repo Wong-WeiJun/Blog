@@ -9,7 +9,9 @@ from app import crud
 from app.api.deps import (
     CurrentUser,
     SessionDep,
+    TokenDep,
     get_current_active_superuser,
+    get_token_jti,
 )
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
@@ -20,9 +22,17 @@ from app.models import (
     UserCreate,
     UserPublic,
     UserRegister,
+    UserSession,
+    UserSessionsPublic,
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
+)
+from app.services.sessions import (
+    get_active_sessions,
+    revoke_other_sessions,
+    revoke_user_session,
+    to_session_public,
 )
 from app.utils import generate_new_account_email, send_email
 
@@ -147,6 +157,62 @@ def read_user_me(current_user: CurrentUser) -> Any:
     Get current user.
     """
     return current_user
+
+
+@router.get("/me/sessions", response_model=UserSessionsPublic)
+def read_user_sessions(
+    session: SessionDep, current_user: CurrentUser, token: TokenDep
+) -> Any:
+    """
+    List active sessions for the current user.
+    """
+    current_session_id = get_token_jti(token)
+    sessions = get_active_sessions(session=session, user_id=current_user.id)
+    return UserSessionsPublic(
+        data=[
+            to_session_public(user_session, current_session_id=current_session_id)
+            for user_session in sessions
+        ]
+    )
+
+
+@router.delete("/me/sessions/{session_id}", response_model=Message)
+def revoke_session(
+    session_id: uuid.UUID,
+    session: SessionDep,
+    current_user: CurrentUser,
+    token: TokenDep,
+) -> Any:
+    """
+    Revoke a specific session.
+    """
+    current_session_id = get_token_jti(token)
+    if current_session_id == session_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Use logout to end your current session",
+        )
+    user_session = session.get(UserSession, session_id)
+    if not user_session or user_session.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Session not found")
+    revoke_user_session(session=session, user_session=user_session)
+    return Message(message="Session revoked successfully")
+
+
+@router.delete("/me/sessions", response_model=Message)
+def revoke_all_other_sessions(
+    session: SessionDep, current_user: CurrentUser, token: TokenDep
+) -> Any:
+    """
+    Revoke all sessions except the current one.
+    """
+    current_session_id = get_token_jti(token)
+    revoked = revoke_other_sessions(
+        session=session,
+        user_id=current_user.id,
+        keep_session_id=current_session_id,
+    )
+    return Message(message=f"Revoked {revoked} session(s)")
 
 
 @router.delete("/me", response_model=Message)
