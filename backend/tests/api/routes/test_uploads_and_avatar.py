@@ -17,6 +17,8 @@ from app.core.config import settings
 
 COVER_URL = f"{settings.API_V1_STR}/uploads/cover-image-url"
 AVATAR_URL = f"{settings.API_V1_STR}/uploads/avatar-url"
+COVER_UPLOAD_URL = f"{settings.API_V1_STR}/uploads/cover-image"
+AVATAR_UPLOAD_URL = f"{settings.API_V1_STR}/uploads/avatar"
 SAVE_AVATAR_URL = f"{settings.API_V1_STR}/users/me/avatar"
 
 # ── fake presign response returned by the mocked boto3 client ────────
@@ -234,6 +236,46 @@ class TestCoverImageUrl:
             )
 
         assert r.status_code == 200  # guesses image/jpeg from .jpeg extension
+
+
+# ──────────────────────── direct uploads (no browser CORS to R2) ─────
+
+
+class TestDirectUploads:
+    def test_avatar_upload_via_backend(
+        self, client: TestClient, normal_user_token_headers: dict[str, str]
+    ):
+        boto_mock = MagicMock()
+
+        with (
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
+            patch(
+                "app.core.r2._public_url",
+                return_value="https://cdn.example.com/avatars/test.jpg",
+            ),
+        ):
+            r = client.post(
+                AVATAR_UPLOAD_URL,
+                files={"file": ("me.jpg", b"fake-image", "image/jpeg")},
+                headers=normal_user_token_headers,
+            )
+
+        assert r.status_code == 200
+        body = r.json()
+        assert body["public_url"] == "https://cdn.example.com/avatars/test.jpg"
+        assert body["key"].startswith("avatars/")
+        boto_mock.put_object.assert_called_once()
+
+    def test_cover_upload_requires_superuser(
+        self, client: TestClient, normal_user_token_headers: dict[str, str]
+    ):
+        r = client.post(
+            COVER_UPLOAD_URL,
+            files={"file": ("cover.jpg", b"fake-image", "image/jpeg")},
+            headers=normal_user_token_headers,
+        )
+        assert r.status_code == 403
 
 
 # ──────────────────────── avatar-url ─────────────────────────────────
