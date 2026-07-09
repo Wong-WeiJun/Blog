@@ -14,6 +14,7 @@ from app.models import (
     Post,
     PostTagLink,
     User,
+    UserSession,
 )  # add Comment, CommentLike
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
@@ -29,6 +30,7 @@ def db() -> Generator[Session, None, None]:
         session.execute(delete(ContactSubmission))
         session.execute(delete(PostTagLink))  # references Post + Tag
         session.execute(delete(Post))  # references User
+        session.execute(delete(UserSession))  # references User
         session.execute(delete(User))
         session.commit()
 
