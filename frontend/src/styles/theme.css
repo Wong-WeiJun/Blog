@@ -179,3 +179,99 @@
     line-height: 1.5;
   }
 }
+
+/* Blog post markdown body — Tailwind preflight zeroes p/h margins, so blank lines
+   in the editor (which become separate <p> blocks) need explicit spacing here. */
+.prose-blog {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.prose-blog > *:first-child {
+  margin-top: 0;
+}
+
+.prose-blog > *:last-child {
+  margin-bottom: 0;
+}
+
+.prose-blog p {
+  margin: 0 0 1.25em;
+}
+
+.prose-blog h1,
+.prose-blog h2,
+.prose-blog h3,
+.prose-blog h4 {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.prose-blog h1 {
+  font-size: 1.75rem;
+  margin: 2em 0 0.75em;
+}
+
+.prose-blog h2 {
+  font-size: 1.5rem;
+  margin: 2em 0 0.65em;
+}
+
+.prose-blog h3 {
+  font-size: 1.25rem;
+  margin: 1.5em 0 0.5em;
+}
+
+.prose-blog h4 {
+  font-size: 1.0625rem;
+  margin: 1.25em 0 0.4em;
+}
+
+.prose-blog hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 2.5em 0;
+}
+
+.prose-blog a {
+  color: #a5b4fc;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose-blog strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.prose-blog ul,
+.prose-blog ol {
+  margin: 0 0 1.25em;
+  padding-left: 1.5em;
+}
+
+.prose-blog li {
+  margin-bottom: 0.4em;
+}
+
+.prose-blog blockquote {
+  margin: 1.5em 0;
+  padding: 1em 1.25em;
+  border-left: 3px solid #5046e5;
+  background: rgba(80, 70, 229, 0.08);
+  border-radius: 0 8px 8px 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.prose-blog blockquote p {
+  margin-bottom: 0;
+}
+
+.prose-blog pre {
+  margin: 1.5em 0;
+}
