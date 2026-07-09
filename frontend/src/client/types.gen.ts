@@ -95,6 +95,26 @@ export type BodyLoginLoginAccessToken = {
 };
 
 /**
+ * Body_uploads-upload_avatar
+ */
+export type BodyUploadsUploadAvatar = {
+    /**
+     * File
+     */
+    file: string;
+};
+
+/**
+ * Body_uploads-upload_cover_image
+ */
+export type BodyUploadsUploadCoverImage = {
+    /**
+     * File
+     */
+    file: string;
+};
+
+/**
  * Certification
  */
 export type Certification = {
@@ -1066,6 +1086,20 @@ export type UpdatePassword = {
 };
 
 /**
+ * UploadedResponse
+ */
+export type UploadedResponse = {
+    /**
+     * Public Url
+     */
+    public_url: string;
+    /**
+     * Key
+     */
+    key: string;
+};
+
+/**
  * UserCreate
  */
 export type UserCreate = {
@@ -1145,6 +1179,58 @@ export type UserRegister = {
      * Full Name
      */
     full_name?: string | null;
+};
+
+/**
+ * UserSessionPublic
+ */
+export type UserSessionPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Device
+     */
+    device: string;
+    /**
+     * Browser
+     */
+    browser: string;
+    /**
+     * Os
+     */
+    os: string;
+    /**
+     * Location
+     */
+    location: string;
+    /**
+     * Device Type
+     */
+    device_type: string;
+    /**
+     * Is Current
+     */
+    is_current: boolean;
+    /**
+     * Last Seen At
+     */
+    last_seen_at: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * UserSessionsPublic
+ */
+export type UserSessionsPublic = {
+    /**
+     * Data
+     */
+    data: Array<UserSessionPublic>;
 };
 
 /**
@@ -1261,6 +1347,22 @@ export type LoginLoginAccessTokenResponses = {
 };
 
 export type LoginLoginAccessTokenResponse = LoginLoginAccessTokenResponses[keyof LoginLoginAccessTokenResponses];
+
+export type LoginLogoutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/login/logout';
+};
+
+export type LoginLogoutResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type LoginLogoutResponse = LoginLogoutResponses[keyof LoginLogoutResponses];
 
 export type LoginTestTokenData = {
     body?: never;
@@ -1528,6 +1630,68 @@ export type UsersUpdateAvatarMeResponses = {
 };
 
 export type UsersUpdateAvatarMeResponse = UsersUpdateAvatarMeResponses[keyof UsersUpdateAvatarMeResponses];
+
+export type UsersRevokeAllOtherSessionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/me/sessions';
+};
+
+export type UsersRevokeAllOtherSessionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type UsersRevokeAllOtherSessionsResponse = UsersRevokeAllOtherSessionsResponses[keyof UsersRevokeAllOtherSessionsResponses];
+
+export type UsersReadUserSessionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/me/sessions';
+};
+
+export type UsersReadUserSessionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserSessionsPublic;
+};
+
+export type UsersReadUserSessionsResponse = UsersReadUserSessionsResponses[keyof UsersReadUserSessionsResponses];
+
+export type UsersRevokeSessionData = {
+    body?: never;
+    path: {
+        /**
+         * Session Id
+         */
+        session_id: string;
+    };
+    query?: never;
+    url: '/api/v1/users/me/sessions/{session_id}';
+};
+
+export type UsersRevokeSessionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UsersRevokeSessionError = UsersRevokeSessionErrors[keyof UsersRevokeSessionErrors];
+
+export type UsersRevokeSessionResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type UsersRevokeSessionResponse = UsersRevokeSessionResponses[keyof UsersRevokeSessionResponses];
 
 export type UsersRegisterUserData = {
     body: UserRegister;
@@ -1927,6 +2091,56 @@ export type PostsPublishPostResponses = {
 };
 
 export type PostsPublishPostResponse = PostsPublishPostResponses[keyof PostsPublishPostResponses];
+
+export type UploadsUploadCoverImageData = {
+    body: BodyUploadsUploadCoverImage;
+    path?: never;
+    query?: never;
+    url: '/api/v1/uploads/cover-image';
+};
+
+export type UploadsUploadCoverImageErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UploadsUploadCoverImageError = UploadsUploadCoverImageErrors[keyof UploadsUploadCoverImageErrors];
+
+export type UploadsUploadCoverImageResponses = {
+    /**
+     * Successful Response
+     */
+    200: UploadedResponse;
+};
+
+export type UploadsUploadCoverImageResponse = UploadsUploadCoverImageResponses[keyof UploadsUploadCoverImageResponses];
+
+export type UploadsUploadAvatarData = {
+    body: BodyUploadsUploadAvatar;
+    path?: never;
+    query?: never;
+    url: '/api/v1/uploads/avatar';
+};
+
+export type UploadsUploadAvatarErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UploadsUploadAvatarError = UploadsUploadAvatarErrors[keyof UploadsUploadAvatarErrors];
+
+export type UploadsUploadAvatarResponses = {
+    /**
+     * Successful Response
+     */
+    200: UploadedResponse;
+};
+
+export type UploadsUploadAvatarResponse = UploadsUploadAvatarResponses[keyof UploadsUploadAvatarResponses];
 
 export type UploadsGetCoverImageUploadUrlData = {
     body: PresignRequest;
