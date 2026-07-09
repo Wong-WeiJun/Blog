@@ -95,6 +95,36 @@ export type BodyLoginLoginAccessToken = {
 };
 
 /**
+ * Certification
+ */
+export type Certification = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Issuer
+     */
+    issuer: string;
+    /**
+     * Date
+     */
+    date: string;
+    /**
+     * Badge
+     */
+    badge: string;
+    /**
+     * Color
+     */
+    color: string;
+    /**
+     * Abbr
+     */
+    abbr: string;
+};
+
+/**
  * CommentAuthor
  */
 export type CommentAuthor = {
@@ -202,6 +232,44 @@ export type DailyCount = {
 };
 
 /**
+ * EducationEntry
+ */
+export type EducationEntry = {
+    /**
+     * Institution
+     */
+    institution: string;
+    /**
+     * Degree
+     */
+    degree: string;
+    /**
+     * Minor
+     */
+    minor?: string;
+    /**
+     * Start
+     */
+    start: string;
+    /**
+     * End
+     */
+    end: string;
+    /**
+     * Current
+     */
+    current?: boolean;
+    /**
+     * Gpa
+     */
+    gpa?: string;
+    /**
+     * Highlights
+     */
+    highlights?: Array<string>;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -209,6 +277,24 @@ export type HttpValidationError = {
      * Detail
      */
     detail?: Array<ValidationError>;
+};
+
+/**
+ * Interest
+ */
+export type Interest = {
+    /**
+     * Icon
+     */
+    icon: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Color
+     */
+    color: string;
 };
 
 /**
@@ -642,6 +728,241 @@ export type ProjectUpdate = {
      * Sort Order
      */
     sort_order?: number | null;
+};
+
+/**
+ * SiteAboutResponse
+ */
+export type SiteAboutResponse = {
+    /**
+     * Homepage Tagline
+     */
+    homepage_tagline: string;
+    /**
+     * Homepage Headline
+     */
+    homepage_headline: string;
+    /**
+     * Homepage Headline Accent
+     */
+    homepage_headline_accent: string;
+    /**
+     * Homepage Bio
+     */
+    homepage_bio: string;
+    /**
+     * Hero Subtitle
+     */
+    hero_subtitle: string;
+    /**
+     * Hero Bio
+     */
+    hero_bio: string;
+    /**
+     * Open To Work
+     */
+    open_to_work: boolean;
+    /**
+     * Resume Url
+     */
+    resume_url: string | null;
+    /**
+     * Github Url
+     */
+    github_url: string | null;
+    /**
+     * Linkedin Url
+     */
+    linkedin_url: string | null;
+    /**
+     * About Paragraphs
+     */
+    about_paragraphs: Array<string>;
+    /**
+     * Pull Quote
+     */
+    pull_quote: string;
+    /**
+     * Pull Quote Attribution
+     */
+    pull_quote_attribution: string;
+    /**
+     * Location
+     */
+    location: string;
+    /**
+     * Availability Text
+     */
+    availability_text: string;
+    /**
+     * Cta Heading
+     */
+    cta_heading: string;
+    /**
+     * Cta Subtext
+     */
+    cta_subtext: string;
+    /**
+     * Skill Groups
+     */
+    skill_groups: Array<SkillGroup>;
+    /**
+     * Certifications
+     */
+    certifications: Array<Certification>;
+    /**
+     * Education
+     */
+    education: Array<EducationEntry>;
+    /**
+     * Interests
+     */
+    interests: Array<Interest>;
+    owner: SiteOwner;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+};
+
+/**
+ * SiteAboutUpdate
+ */
+export type SiteAboutUpdate = {
+    /**
+     * Homepage Tagline
+     */
+    homepage_tagline?: string | null;
+    /**
+     * Homepage Headline
+     */
+    homepage_headline?: string | null;
+    /**
+     * Homepage Headline Accent
+     */
+    homepage_headline_accent?: string | null;
+    /**
+     * Homepage Bio
+     */
+    homepage_bio?: string | null;
+    /**
+     * Hero Subtitle
+     */
+    hero_subtitle?: string | null;
+    /**
+     * Hero Bio
+     */
+    hero_bio?: string | null;
+    /**
+     * Open To Work
+     */
+    open_to_work?: boolean | null;
+    /**
+     * Resume Url
+     */
+    resume_url?: string | null;
+    /**
+     * Github Url
+     */
+    github_url?: string | null;
+    /**
+     * Linkedin Url
+     */
+    linkedin_url?: string | null;
+    /**
+     * About Paragraphs
+     */
+    about_paragraphs?: Array<string> | null;
+    /**
+     * Pull Quote
+     */
+    pull_quote?: string | null;
+    /**
+     * Pull Quote Attribution
+     */
+    pull_quote_attribution?: string | null;
+    /**
+     * Location
+     */
+    location?: string | null;
+    /**
+     * Availability Text
+     */
+    availability_text?: string | null;
+    /**
+     * Cta Heading
+     */
+    cta_heading?: string | null;
+    /**
+     * Cta Subtext
+     */
+    cta_subtext?: string | null;
+    /**
+     * Skill Groups
+     */
+    skill_groups?: Array<SkillGroup> | null;
+    /**
+     * Certifications
+     */
+    certifications?: Array<Certification> | null;
+    /**
+     * Education
+     */
+    education?: Array<EducationEntry> | null;
+    /**
+     * Interests
+     */
+    interests?: Array<Interest> | null;
+};
+
+/**
+ * SiteOwner
+ */
+export type SiteOwner = {
+    /**
+     * Full Name
+     */
+    full_name?: string | null;
+    /**
+     * Avatar Url
+     */
+    avatar_url?: string | null;
+};
+
+/**
+ * SkillGroup
+ */
+export type SkillGroup = {
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Icon
+     */
+    icon: string;
+    /**
+     * Color
+     */
+    color: string;
+    /**
+     * Skills
+     */
+    skills?: Array<SkillItem>;
+};
+
+/**
+ * SkillItem
+ */
+export type SkillItem = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Level
+     */
+    level: number;
 };
 
 /**
@@ -1831,6 +2152,47 @@ export type ProjectsUpdateProjectResponses = {
 
 export type ProjectsUpdateProjectResponse = ProjectsUpdateProjectResponses[keyof ProjectsUpdateProjectResponses];
 
+export type AboutGetAboutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/about';
+};
+
+export type AboutGetAboutResponses = {
+    /**
+     * Successful Response
+     */
+    200: SiteAboutResponse;
+};
+
+export type AboutGetAboutResponse = AboutGetAboutResponses[keyof AboutGetAboutResponses];
+
+export type AboutUpdateAboutData = {
+    body: SiteAboutUpdate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/about';
+};
+
+export type AboutUpdateAboutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AboutUpdateAboutError = AboutUpdateAboutErrors[keyof AboutUpdateAboutErrors];
+
+export type AboutUpdateAboutResponses = {
+    /**
+     * Successful Response
+     */
+    200: SiteAboutResponse;
+};
+
+export type AboutUpdateAboutResponse = AboutUpdateAboutResponses[keyof AboutUpdateAboutResponses];
+
 export type CommentsGetPostCommentsData = {
     body?: never;
     path: {
@@ -2034,6 +2396,20 @@ export type AdminGetAdminStatsResponses = {
 };
 
 export type AdminGetAdminStatsResponse = AdminGetAdminStatsResponses[keyof AdminGetAdminStatsResponses];
+
+export type FeedReadFeedData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/feed.xml';
+};
+
+export type FeedReadFeedResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type PrivateCreateUserData = {
     body: PrivateUserCreate;
