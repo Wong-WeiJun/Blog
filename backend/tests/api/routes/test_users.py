@@ -333,6 +333,23 @@ def test_register_user(client: TestClient, db: Session) -> None:
     assert user_db
     assert user_db.email == username
     assert user_db.full_name == full_name
+    assert user_db.email_verified is False
+
+
+def test_register_user_auto_verifies_without_email_provider(
+    client: TestClient, db: Session
+) -> None:
+    username = random_email()
+    password = random_lower_string()
+    data = {"email": username, "password": password, "full_name": "Test User"}
+
+    with patch("app.api.routes.users.email_delivery_enabled", return_value=False):
+        r = client.post(f"{settings.API_V1_STR}/users/signup", json=data)
+        assert r.status_code == 200
+
+    user_db = db.exec(select(User).where(User.email == username)).first()
+    assert user_db
+    assert user_db.email_verified is True
     verified, _ = verify_password(password, user_db.hashed_password)
     assert verified
 
