@@ -6,7 +6,8 @@ import {
   Calendar, Loader2, Check, AlertCircle,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { postsCreatePost, postsUpdatePost, postsPublishPost, uploadsGetCoverImageUploadUrl } from "@/client/sdk.gen";
+import { postsCreatePost, postsUpdatePost, postsPublishPost } from "@/client/sdk.gen";
+import { uploadCoverImage } from "../../../lib/upload-image";
 import type { PostResponse, PostStatus } from "@/client/types.gen";
 import { BRAND_DOMAIN } from "../../../lib/constants";
 import useCustomToast from "../../../hooks/useCustomToast";
@@ -108,31 +109,7 @@ async function uploadToR2(
   file: File,
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  const presignRes = await uploadsGetCoverImageUploadUrl({
-    body: { filename: file.name, content_type: file.type },
-    throwOnError: true,
-  });
-  const { url, fields, public_url } = presignRes.data;
-
-  // Step 2 — POST directly to R2
-  return new Promise((resolve, reject) => {
-    const fd = new FormData();
-    // fields must come before the file (S3-compatible requirement)
-    Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
-    fd.append("file", file);
-
-    const xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.onload = () => {
-      if (xhr.status === 204 || xhr.status === 200) resolve(public_url);
-      else reject(new Error(`Upload failed: ${xhr.status}`));
-    };
-    xhr.onerror = () => reject(new Error("Network error during upload"));
-    xhr.open("POST", url);
-    xhr.send(fd);
-  });
+  return uploadCoverImage(file, onProgress);
 }
 
 function CoverUpload({
