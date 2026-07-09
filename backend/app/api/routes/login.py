@@ -17,12 +17,24 @@ from app.api.deps import (
 )
 from app.core import security
 from app.core.config import settings
-from app.models import Message, NewPassword, Token, UserPublic, UserSession, UserUpdate
+from app.models import (
+    Message,
+    NewPassword,
+    Token,
+    UserPublic,
+    UserSession,
+    UserUpdate,
+    VerifyEmail,
+)
 from app.services.sessions import create_user_session, revoke_user_session
 from app.utils import (
+    email_delivery_enabled,
+    generate_email_verification_token,
     generate_password_reset_token,
     generate_reset_password_email,
     send_email,
+    send_verification_email,
+    verify_email_verification_token,
     verify_password_reset_token,
 )
 
@@ -46,6 +58,8 @@ def login_access_token(
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+    elif not user.email_verified:
+        raise HTTPException(status_code=400, detail="Email not verified")
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     session_id = uuid.uuid4()
     expires_at = datetime.now(timezone.utc) + access_token_expires
@@ -137,6 +151,44 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
         user_in=user_in_update,
     )
     return Message(message="Password updated successfully")
+
+
+@router.post("/verify-email/")
+def verify_email(session: SessionDep, body: VerifyEmail) -> Message:
+    """
+    Verify a user's email address.
+    """
+    email = verify_email_verification_token(token=body.token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    user = crud.get_user_by_email(session=session, email=email)
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    if user.email_verified:
+        return Message(message="Email already verified")
+    user.email_verified = True
+    session.add(user)
+    session.commit()
+    return Message(message="Email verified successfully")
+
+
+@router.post("/resend-verification/{email}")
+def resend_verification_email(email: str, session: SessionDep) -> Message:
+    """
+    Resend email verification link.
+    """
+    user = crud.get_user_by_email(session=session, email=email)
+    if user and not user.email_verified:
+        if not email_delivery_enabled():
+            raise HTTPException(
+                status_code=500,
+                detail="No email provider configured.",
+            )
+        token = generate_email_verification_token(email=email)
+        send_verification_email(email_to=user.email, email=email, token=token)
+    return Message(
+        message="If that email is registered and unverified, we sent a verification link"
+    )
 
 
 @router.post(
