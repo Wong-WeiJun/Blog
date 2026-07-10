@@ -68,18 +68,22 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
+        # Only production may use DATABASE_URL (Neon, etc.). Local/staging always
+        # use POSTGRES_* so tests and dev never touch the hosted database.
+        if self.ENVIRONMENT == "production" and self.DATABASE_URL:
+            return PostgresDsn(normalize_database_url(self.DATABASE_URL))
+        if self.POSTGRES_SERVER:
+            return PostgresDsn.build(
+                scheme="postgresql+psycopg",
+                username=self.POSTGRES_USER,
+                password=self.POSTGRES_PASSWORD,
+                host=self.POSTGRES_SERVER,
+                port=self.POSTGRES_PORT,
+                path=self.POSTGRES_DB,
+            )
         if self.DATABASE_URL:
             return PostgresDsn(normalize_database_url(self.DATABASE_URL))
-        if not self.POSTGRES_SERVER:
-            raise ValueError("Either DATABASE_URL or POSTGRES_SERVER must be set")
-        return PostgresDsn.build(
-            scheme="postgresql+psycopg",
-            username=self.POSTGRES_USER,
-            password=self.POSTGRES_PASSWORD,
-            host=self.POSTGRES_SERVER,
-            port=self.POSTGRES_PORT,
-            path=self.POSTGRES_DB,
-        )
+        raise ValueError("Either DATABASE_URL or POSTGRES_SERVER must be set")
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
