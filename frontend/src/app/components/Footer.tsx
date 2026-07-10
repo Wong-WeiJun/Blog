@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { Github, Twitter, Linkedin, Mail, Rss } from "lucide-react";
 import { BRAND_DOMAIN, BRAND_HANDLE, BRAND_GITHUB, BRAND_TWITTER, BRAND_EMAIL, COPYRIGHT_YEAR, RSS_FEED_URL } from "../../lib/constants";
+import { BrandLogo } from "./BrandLogo";
 
 export function Footer() {
   return (
@@ -9,11 +10,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
           {/* Col 1 — Logo + tagline */}
           <div className="flex flex-col gap-4">
-            <Link
-              to="/"
-              style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.375rem", color: "#fff", letterSpacing: "-0.01em", textDecoration: "none" }}
-            >
-              {BRAND_DOMAIN}
+            <Link to="/" style={{ textDecoration: "none" }}>
+              <BrandLogo size="lg" textStyle={{ fontSize: "1.375rem" }} />
             </Link>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", lineHeight: 1.65, color: "rgba(255,255,255,0.45)", maxWidth: "260px" }}>
               A developer blog documenting the journey from student to cloud engineer — one deployment at a time.
