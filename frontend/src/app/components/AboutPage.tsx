@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import type { ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Download, Github, Linkedin, ArrowLeft,
   MapPin, Calendar, ChevronRight,
@@ -11,11 +12,13 @@ import type {
   SiteAboutResponse,
   SkillGroup,
 } from "@/client/types.gen";
+import { projectsGetProjects } from "@/client/sdk.gen";
 import { BRAND_EMAIL } from "../../lib/constants";
 import { getAboutIcon } from "../../lib/about-icons";
 import { getDisplayName, DEFAULT_ABOUT_PROFILE } from "../../lib/about-defaults";
 import { useAboutProfile } from "../../lib/use-about-profile";
 import { ProfileAvatar } from "./ProfileAvatar";
+import { ProjectCard, mapProject } from "./ProjectsPage";
 
 /* ─── section wrapper ─── */
 
@@ -349,18 +352,53 @@ function Interests({ profile }: { profile: SiteAboutResponse }) {
 /* ─── 7. Projects ─── */
 
 function Projects() {
+  const { data: rawProjects = [], isLoading } = useQuery({
+    queryKey: ["projects"],
+    queryFn: async () => {
+      const res = await projectsGetProjects();
+      return res.data ?? [];
+    },
+  });
+
+  const projects = rawProjects.map(mapProject);
+
   return (
     <Section id="projects" alt>
       <SectionLabel>Projects</SectionLabel>
       <SectionHeading>Things I&apos;ve shipped</SectionHeading>
-      <div style={{ textAlign: "center", padding: "48px 24px", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "14px" }}>
-        <p style={{ fontFamily: "'Fraunces', serif", fontSize: "1.125rem", fontWeight: 600, color: "rgba(255,255,255,0.4)", margin: "0 0 8px" }}>
-          No projects published yet.
+
+      {isLoading ? (
+        <p style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontFamily: "'Inter', sans-serif", fontSize: "0.9375rem", padding: "48px 0" }}>
+          Loading projects…
         </p>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.25)", margin: 0 }}>
-          Check back soon or visit <Link to="/projects" style={{ color: "#a5b4fc", textDecoration: "none" }}>the projects page</Link>.
-        </p>
-      </div>
+      ) : projects.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "48px 24px", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: "14px" }}>
+          <p style={{ fontFamily: "'Fraunces', serif", fontSize: "1.125rem", fontWeight: 600, color: "rgba(255,255,255,0.4)", margin: "0 0 8px" }}>
+            No projects published yet.
+          </p>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "rgba(255,255,255,0.25)", margin: 0 }}>
+            Check back soon or visit <Link to="/projects" style={{ color: "#a5b4fc", textDecoration: "none" }}>the projects page</Link>.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
+            {projects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+          <div style={{ textAlign: "center", marginTop: "40px" }}>
+            <Link
+              to="/projects"
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", fontWeight: 600, color: "#a5b4fc", textDecoration: "none", border: "1px solid rgba(80,70,229,0.35)", borderRadius: "8px", padding: "10px 20px", transition: "background 0.15s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(80,70,229,0.12)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              View all projects →
+            </Link>
+          </div>
+        </>
+      )}
     </Section>
   );
 }
