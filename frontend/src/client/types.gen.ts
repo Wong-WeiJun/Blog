@@ -626,6 +626,10 @@ export type ProjectCreate = {
      */
     live_url?: string | null;
     /**
+     * Cover Image Url
+     */
+    cover_image_url?: string | null;
+    /**
      * Accent
      */
     accent?: string;
@@ -676,6 +680,10 @@ export type ProjectResponse = {
      * Live Url
      */
     live_url: string | null;
+    /**
+     * Cover Image Url
+     */
+    cover_image_url: string | null;
     /**
      * Accent
      */
@@ -736,6 +744,10 @@ export type ProjectUpdate = {
      * Live Url
      */
     live_url?: string | null;
+    /**
+     * Cover Image Url
+     */
+    cover_image_url?: string | null;
     /**
      * Accent
      */
