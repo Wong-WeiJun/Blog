@@ -4,7 +4,8 @@ import { Link } from "react-router";
 import { Eye, EyeOff, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Check, Mail } from "lucide-react";
 import { AxiosError } from "axios";
 import { useAuth } from "../../../lib/auth-context";
-import { BRAND_NAME, BRAND_DOMAIN } from "../../../lib/constants";
+import { BRAND_DOMAIN } from "../../../lib/constants";
+import { BrandLogo } from "../BrandLogo";
 
 /* ─── shared primitives ─── */
 
@@ -15,14 +16,7 @@ interface NavProps {
 }
 
 function Logo() {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", marginBottom: "32px" }}>
-      <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "linear-gradient(135deg, #5046e5, #818cf8)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 24px rgba(80,70,229,0.4)" }}>
-        <span style={{ fontFamily: "'Fraunces', serif", fontSize: "1.375rem", fontWeight: 700, color: "#fff" }}>{BRAND_NAME[0]?.toUpperCase() ?? "Y"}</span>
-      </div>
-      <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.25rem", color: "#fff", letterSpacing: "-0.01em" }}>{BRAND_DOMAIN}</span>
-    </div>
-  );
+  return <BrandLogo size="lg" layout="stacked" style={{ marginBottom: "32px" }} />;
 }
 
 interface InputProps {
