@@ -5,7 +5,8 @@ import {
   LayoutDashboard, FileText, MessageSquare, Tag, BarChart2,
   ExternalLink, UserCircle, FolderGit2, FileUser,
 } from "lucide-react";
-import { BRAND_NAME, BRAND_DOMAIN } from "../../../lib/constants";
+import { BRAND_NAME } from "../../../lib/constants";
+import { BrandLogo } from "../BrandLogo";
 import { useAuth } from "../../../lib/auth-context";
 
 export type AdminView = "overview" | "posts" | "projects" | "comments" | "tags" | "analytics" | "about" | "profile";
@@ -62,25 +63,7 @@ export function AdminSidebar({ activeView, onNavigate, collapsed }: Props) {
           gap: "10px",
         }}
       >
-        <div
-          style={{
-            width: "28px",
-            height: "28px",
-            borderRadius: "8px",
-            background: "linear-gradient(135deg, #5046e5, #818cf8)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ fontFamily: "'Fraunces', serif", fontSize: "0.875rem", fontWeight: 700, color: "#fff" }}>{firstLetter}</span>
-        </div>
-        {!collapsed && (
-          <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.125rem", color: "#fff", whiteSpace: "nowrap" }}>
-            {BRAND_DOMAIN}
-          </span>
-        )}
+        <BrandLogo size="sm" showText={!collapsed} />
       </div>
 
       {/* Section label */}
