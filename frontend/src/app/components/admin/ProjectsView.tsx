@@ -1,7 +1,7 @@
 import type { CSSProperties, FormEvent } from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Trash2, AlertTriangle, Plus, X } from "lucide-react";
+import { Pencil, Trash2, AlertTriangle, Plus, X, Loader2 } from "lucide-react";
 import {
   projectsGetProjects,
   projectsCreateProject,
@@ -10,6 +10,7 @@ import {
 } from "@/client/sdk.gen";
 import type { ProjectResponse, ProjectStatus } from "@/client/types.gen";
 import useCustomToast from "../../../hooks/useCustomToast";
+import { uploadCoverImage } from "../../../lib/upload-image";
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: "completed", label: "Completed" },
@@ -38,6 +39,7 @@ interface FormState {
   stack: string[];
   github_url: string;
   live_url: string;
+  cover_image_url: string | null;
   stars: number;
   forks: number;
   sort_order: number;
@@ -52,6 +54,7 @@ const EMPTY_FORM: FormState = {
   stack: [],
   github_url: "",
   live_url: "",
+  cover_image_url: null,
   stars: 0,
   forks: 0,
   sort_order: 0,
@@ -67,6 +70,7 @@ function projectToForm(p: ProjectResponse): FormState {
     stack: [...p.stack],
     github_url: p.github_url ?? "",
     live_url: p.live_url ?? "",
+    cover_image_url: p.cover_image_url,
     stars: p.stars,
     forks: p.forks,
     sort_order: p.sort_order,
@@ -83,6 +87,7 @@ function formToBody(form: FormState) {
     stack: form.stack,
     github_url: form.github_url.trim() || null,
     live_url: form.live_url.trim() || null,
+    cover_image_url: form.cover_image_url,
     stars: form.stars,
     forks: form.forks,
     sort_order: form.sort_order,
@@ -103,6 +108,8 @@ export function ProjectsView({ search, newProjectTrigger = 0 }: Props) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [stackInput, setStackInput] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (newProjectTrigger > 0) {
@@ -195,6 +202,27 @@ export function ProjectsView({ search, newProjectTrigger = 0 }: Props) {
       setForm((f) => ({ ...f, stack: [...f.stack, val] }));
     }
     setStackInput("");
+  };
+
+  const handleCoverUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      showErrorToast("Please select an image file.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showErrorToast("Image must be under 10 MB.");
+      return;
+    }
+    setCoverUploading(true);
+    try {
+      const url = await uploadCoverImage(file);
+      setForm((f) => ({ ...f, cover_image_url: url }));
+    } catch {
+      showErrorToast("Failed to upload cover image.");
+    } finally {
+      setCoverUploading(false);
+      if (coverInputRef.current) coverInputRef.current.value = "";
+    }
   };
 
   const thStyle: CSSProperties = {
@@ -413,6 +441,43 @@ export function ProjectsView({ search, newProjectTrigger = 0 }: Props) {
                   placeholder="Add tech (Enter to confirm)"
                   style={inputStyle}
                 />
+              </div>
+              <div>
+                <label style={labelStyle}>Cover image</label>
+                {form.cover_image_url ? (
+                  <div style={{ position: "relative", borderRadius: "9px", overflow: "hidden", aspectRatio: "16/9", marginBottom: "8px" }}>
+                    <img src={form.cover_image_url} alt="Cover preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, cover_image_url: null }))}
+                      style={{ position: "absolute", top: "8px", right: "8px", width: "26px", height: "26px", borderRadius: "50%", background: "rgba(0,0,0,0.65)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => coverInputRef.current?.click()}
+                    disabled={coverUploading}
+                    style={{ width: "100%", aspectRatio: "16/9", borderRadius: "9px", border: "1px dashed rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.02)", cursor: coverUploading ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: "rgba(255,255,255,0.4)", fontFamily: "'Inter', sans-serif", fontSize: "0.8125rem" }}
+                  >
+                    {coverUploading ? <><Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} /> Uploading…</> : "Upload cover image"}
+                  </button>
+                )}
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleCoverUpload(file);
+                  }}
+                />
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", color: "rgba(255,255,255,0.3)", margin: "6px 0 0" }}>
+                  Optional. Falls back to accent gradient if not set.
+                </p>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
