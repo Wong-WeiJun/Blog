@@ -20,8 +20,18 @@ from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
 
 
+def _assert_safe_test_database() -> None:
+    db_uri = str(settings.SQLALCHEMY_DATABASE_URI).lower()
+    if settings.ENVIRONMENT != "production" and "neon.tech" in db_uri:
+        pytest.fail(
+            "Refusing to run tests against Neon while ENVIRONMENT is not production. "
+            "Use local POSTGRES_* settings or set ENVIRONMENT=production only on deploy."
+        )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def db() -> Generator[Session, None, None]:
+    _assert_safe_test_database()
     with Session(engine) as session:
         init_db(session)
         yield session
