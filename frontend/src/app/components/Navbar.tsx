@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { Search, X, Menu, Settings, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
-import { BRAND_DOMAIN } from "../../lib/constants";
+import { BrandLogo } from "./BrandLogo";
 
 function UserMenu() {
   const [open, setOpen] = useState(false);
@@ -121,9 +121,9 @@ export function Navbar() {
         <Link
           to="/"
           onClick={() => setMenuOpen(false)}
-          style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.25rem", color: "#fff", letterSpacing: "-0.01em", flexShrink: 0, textDecoration: "none" }}
+          style={{ flexShrink: 0, textDecoration: "none" }}
         >
-          {BRAND_DOMAIN}
+          <BrandLogo size="sm" />
         </Link>
 
         {/* Center links — desktop */}
