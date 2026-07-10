@@ -444,6 +444,7 @@ class Project(SQLModel, table=True):
     forks: int = 0
     github_url: str | None = Field(default=None, max_length=1000)
     live_url: str | None = Field(default=None, max_length=1000)
+    cover_image_url: str | None = Field(default=None, max_length=1000)
     accent: str = "#5046e5"
     category: str = Field(max_length=100)
     sort_order: int = 0
@@ -464,6 +465,7 @@ class ProjectCreate(SQLModel):
     forks: int = 0
     github_url: str | None = Field(default=None, max_length=1000)
     live_url: str | None = Field(default=None, max_length=1000)
+    cover_image_url: str | None = Field(default=None, max_length=1000)
     accent: str = "#5046e5"
     category: str = Field(min_length=1, max_length=100)
     sort_order: int = 0
@@ -478,6 +480,7 @@ class ProjectUpdate(SQLModel):
     forks: int | None = None
     github_url: str | None = Field(default=None, max_length=1000)
     live_url: str | None = Field(default=None, max_length=1000)
+    cover_image_url: str | None = Field(default=None, max_length=1000)
     accent: str | None = None
     category: str | None = Field(default=None, min_length=1, max_length=100)
     sort_order: int | None = None
@@ -493,6 +496,7 @@ class ProjectResponse(SQLModel):
     forks: int
     github_url: str | None
     live_url: str | None
+    cover_image_url: str | None
     accent: str
     category: str
     sort_order: int
