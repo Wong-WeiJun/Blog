@@ -1,5 +1,6 @@
 export const BRAND_NAME = "Wong Wei Jun";
-export const BRAND_DOMAIN = "wongweijun.me";
+export const BRAND_DOMAIN = "BlogIn";
+export const LOGO_SRC = "/logo.svg";
 export const BRAND_EMAIL = "wong.weijun923@gmail.com";
 export const BRAND_HANDLE = "Wei Jun Wong";
 export const BRAND_GITHUB = "Wong-WeiJun";
