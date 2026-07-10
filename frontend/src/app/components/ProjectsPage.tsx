@@ -67,9 +67,10 @@ export interface Project {
   live: string | null;
   accent: string;
   category: string;
+  coverImage: string | null;
 }
 
-function mapProject(p: ProjectResponse): Project {
+export function mapProject(p: ProjectResponse): Project {
   return {
     id: p.id,
     title: p.title,
@@ -82,6 +83,7 @@ function mapProject(p: ProjectResponse): Project {
     live: p.live_url,
     accent: p.accent,
     category: p.category,
+    coverImage: p.cover_image_url,
   };
 }
 
@@ -107,6 +109,13 @@ export function ProjectCard({ project }: { project: Project }) {
       onMouseLeave={() => setHovered(false)}
     >
       <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", background: `linear-gradient(135deg, ${project.accent}22 0%, #080a1a 100%)` }}>
+        {project.coverImage && (
+          <img
+            src={project.coverImage}
+            alt=""
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        )}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,10,26,0.7) 0%, transparent 55%)" }} />
         <div style={{ position: "absolute", top: "12px", left: "12px", display: "flex", gap: "6px", flexWrap: "wrap" }}>
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.65rem", fontWeight: 700, color: project.accent, background: `${project.accent}22`, border: `1px solid ${project.accent}40`, borderRadius: "5px", padding: "2px 8px", backdropFilter: "blur(6px)" }}>
