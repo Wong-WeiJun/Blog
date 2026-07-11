@@ -65,6 +65,18 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
 
+    DATABASE_KEEPALIVE_ENABLED: bool = True
+    DATABASE_KEEPALIVE_INTERVAL_SECONDS: int = 240
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def database_keepalive_active(self) -> bool:
+        return (
+            self.DATABASE_KEEPALIVE_ENABLED
+            and self.ENVIRONMENT == "production"
+            and bool(self.DATABASE_URL)
+        )
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
