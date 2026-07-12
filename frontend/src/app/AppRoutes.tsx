@@ -20,8 +20,8 @@ import { AdminDashboard } from "./components/admin/AdminDashboard";
 function RequireAdmin() {
   const { user, isLoading } = useAuth();
 
-  // Wait for auth state to resolve before deciding
-  if (isLoading) {
+  // Only block on the initial auth check — not background refetches on tab focus
+  if (isLoading && !user) {
     return <div />; // blank while auth resolves; could be a spinner
   }
 
