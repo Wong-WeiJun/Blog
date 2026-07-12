@@ -13,6 +13,13 @@ import { ProjectsView } from "./ProjectsView";
 import { AboutEditorView } from "./AboutEditorView";
 import { useState } from "react";
 import type { PostResponse } from "@/client/types.gen";
+import {
+  clearAdminEditorSession,
+  clearPostEditorDraft,
+  clearPostEditorPersistence,
+  hasAdminEditorSession,
+  readPostEditorDraft,
+} from "../../../lib/post-editor-draft";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -20,19 +27,23 @@ export function AdminDashboard() {
   const [view, setView]                         = useState<AdminView>("overview");
   const [search, setSearch]                     = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [editorOpen, setEditorOpen]             = useState(false);
-  const [editingPost, setEditingPost]           = useState<PostResponse | null>(null);
+  const [editorOpen, setEditorOpen]             = useState(() => hasAdminEditorSession());
+  const [editingPost, setEditingPost]           = useState<PostResponse | null>(() => {
+    if (!hasAdminEditorSession()) return null;
+    const draft = readPostEditorDraft();
+    return draft?.postSnapshot ?? null;
+  });
   const [newProjectTrigger, setNewProjectTrigger] = useState(0);
 
   const handleNavigate = (v: AdminView) => { setView(v); setSearch(""); };
   const handleExit     = () => navigate("/");
   const handleLogout   = () => { logout(); navigate("/"); };
 
-  const openNewPost  = () => { setEditingPost(null); setEditorOpen(true); };
+  const openNewPost  = () => { clearPostEditorDraft(); setEditingPost(null); setEditorOpen(true); };
   const openEditPost = (post: PostResponse) => { setEditingPost(post); setEditorOpen(true); };
   const openNewProject = () => setNewProjectTrigger((n) => n + 1);
-  const closeEditor  = () => { setEditorOpen(false); setEditingPost(null); };
-  const handlePublished = () => { closeEditor(); setView("posts"); };
+  const closeEditor  = () => { clearAdminEditorSession(); setEditorOpen(false); setEditingPost(null); };
+  const handlePublished = () => { clearPostEditorPersistence(); closeEditor(); setView("posts"); };
 
   if (editorOpen) {
     return <PostEditor onBack={closeEditor} onPublished={handlePublished} post={editingPost} />;
