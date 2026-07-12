@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject, DragEvent } from "react";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   ArrowLeft, Bold, Italic, Code, Heading2, Heading3, Link2,
   ImagePlus, Quote, Save, Send, Eye, X, Upload, Globe,
@@ -11,6 +11,12 @@ import { uploadCoverImage } from "../../../lib/upload-image";
 import type { PostResponse, PostStatus } from "@/client/types.gen";
 import { BRAND_DOMAIN } from "../../../lib/constants";
 import useCustomToast from "../../../hooks/useCustomToast";
+import {
+  clearPostEditorPersistence,
+  markAdminEditorSession,
+  readPostEditorDraft,
+  writePostEditorDraft,
+} from "../../../lib/post-editor-draft";
 
 /* ───────────────────────────── types ───────────────────────────── */
 
@@ -457,29 +463,98 @@ function slugify(text: string): string {
 
 const PLACEHOLDER = `## Introduction\n\nStart writing your post here. This editor supports **Markdown** syntax.\n\nUse the toolbar above to insert formatting, headings, code blocks, and links.\n\n\`\`\`bash\n# Example code block\nterraform apply -var="blue_weight=0" -var="green_weight=100"\n\`\`\`\n\n> Blockquotes are great for calling out important notes.\n\nHappy writing!\n`;
 
+function resolveEditorState(post: PostResponse | null | undefined) {
+  const postId = post?.id ?? null;
+  const draft = readPostEditorDraft();
+  const useDraft = draft !== null && draft.postId === postId;
+
+  if (useDraft && draft) {
+    return {
+      fromDraft: true,
+      createdPost: draft.createdPostSnapshot,
+      title: draft.title,
+      slug: draft.slug,
+      slugEdited: draft.slugEdited,
+      content: draft.content,
+      excerpt: draft.excerpt,
+      status: draft.status,
+      featured: draft.featured,
+      tags: draft.tags,
+      coverImage: draft.coverImage,
+      date: draft.date,
+    };
+  }
+
+  const isEditing = !!post;
+  return {
+    fromDraft: false,
+    createdPost: null as PostResponse | null,
+    title: post?.title ?? "",
+    slug: post?.slug ?? "",
+    slugEdited: isEditing,
+    content: post?.content ?? PLACEHOLDER,
+    excerpt: post?.excerpt ?? "",
+    status: (post?.status ?? "draft") as PostStatus,
+    featured: post?.featured ?? false,
+    tags: post?.tags?.map((t) => t.name) ?? [],
+    coverImage: post?.cover_image_url ?? null,
+    date: post?.published_at ? post.published_at.slice(0, 10) : new Date().toISOString().slice(0, 10),
+  };
+}
+
 export function PostEditor({ onBack, onPublished, post }: Props) {
-  const [createdPost, setCreatedPost] = useState<PostResponse | null>(null);
+  const initial = useRef(resolveEditorState(post)).current;
+  const [createdPost, setCreatedPost] = useState<PostResponse | null>(initial.createdPost);
   const isEditing = !!post || !!createdPost;
   const activePostId = post?.id ?? createdPost?.id;
   const queryClient = useQueryClient();
   const { showSuccessToast, showErrorToast } = useCustomToast();
 
-  // Form state — initialised from existing post if editing
-  const [title, setTitle]       = useState(post?.title ?? "");
-  const [slug, setSlug]         = useState(post?.slug ?? "");
-  const [slugEdited, setSlugEdited] = useState(isEditing);
-  const [content, setContent]   = useState(post?.content ?? PLACEHOLDER);
-  const [excerpt, setExcerpt]   = useState(post?.excerpt ?? "");
-  const [status, setStatus]     = useState<PostStatus>(post?.status ?? "draft");
-  const [featured, setFeatured] = useState(post?.featured ?? false);
-  const [tags, setTags]         = useState<string[]>(post?.tags?.map((t) => t.name) ?? []);
-  const [coverImage, setCoverImage] = useState<string | null>(post?.cover_image_url ?? null);
-  const [date, setDate]         = useState<string>(() => {
-    if (post?.published_at) return post.published_at.slice(0, 10);
-    return new Date().toISOString().slice(0, 10);
-  });
+  const [title, setTitle]       = useState(initial.title);
+  const [slug, setSlug]         = useState(initial.slug);
+  const [slugEdited, setSlugEdited] = useState(initial.slugEdited);
+  const [content, setContent]   = useState(initial.content);
+  const [excerpt, setExcerpt]   = useState(initial.excerpt);
+  const [status, setStatus]     = useState<PostStatus>(initial.status);
+  const [featured, setFeatured] = useState(initial.featured);
+  const [tags, setTags]         = useState<string[]>(initial.tags);
+  const [coverImage, setCoverImage] = useState<string | null>(initial.coverImage);
+  const [date, setDate]         = useState<string>(initial.date);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    markAdminEditorSession();
+    if (initial.fromDraft) {
+      showSuccessToast("Restored your unsaved draft.");
+    }
+  }, [initial.fromDraft, showSuccessToast]);
+
+  useEffect(() => {
+    const postId = post?.id ?? null;
+    const timer = window.setTimeout(() => {
+      writePostEditorDraft({
+        version: 1,
+        postId,
+        postSnapshot: post ?? null,
+        createdPostSnapshot: createdPost,
+        title,
+        slug,
+        slugEdited,
+        content,
+        excerpt,
+        status,
+        featured,
+        tags,
+        coverImage,
+        date,
+        savedAt: Date.now(),
+      });
+      markAdminEditorSession();
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [post, createdPost, title, slug, slugEdited, content, excerpt, status, featured, tags, coverImage, date]);
 
   // Auto-generate slug from title (only while user hasn't manually edited it)
   const handleTitleChange = (val: string) => {
@@ -531,6 +606,7 @@ export function PostEditor({ onBack, onPublished, post }: Props) {
       showSuccessToast("Post published!");
       setStatus("published");
       setCreatedPost(data.data ?? null);
+      clearPostEditorPersistence();
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       if (isEditing) queryClient.invalidateQueries({ queryKey: ["post", post?.slug ?? createdPost?.slug] });
