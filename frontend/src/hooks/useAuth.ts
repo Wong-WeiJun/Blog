@@ -42,7 +42,6 @@ const useAuth = () => {
   const {
     data: user,
     isLoading,
-    isFetching,
   } = useQuery<UserPublic | null, Error>({
     queryKey: ["currentUser"],
     queryFn: async () => {
@@ -157,7 +156,7 @@ const useAuth = () => {
     logout,
     refreshUser,
     user: user ?? null,
-    isLoading: isLoading || isFetching,
+    isLoading,
   };
 };
 
