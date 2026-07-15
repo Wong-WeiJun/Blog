@@ -49,6 +49,7 @@ def test_keepalive_loop_calls_ping_database() -> None:
 def test_database_keepalive_active_in_production() -> None:
     settings = Settings(
         PROJECT_NAME="Test",
+        SECRET_KEY="test-secret-key-not-default",
         FIRST_SUPERUSER="admin@example.com",
         FIRST_SUPERUSER_PASSWORD="secret",
         ENVIRONMENT="production",
@@ -61,6 +62,7 @@ def test_database_keepalive_active_in_production() -> None:
 def test_database_keepalive_inactive_when_local() -> None:
     settings = Settings(
         PROJECT_NAME="Test",
+        SECRET_KEY="test-secret-key-not-default",
         FIRST_SUPERUSER="admin@example.com",
         FIRST_SUPERUSER_PASSWORD="secret",
         ENVIRONMENT="local",
@@ -73,6 +75,7 @@ def test_database_keepalive_inactive_when_local() -> None:
 def test_database_keepalive_inactive_when_disabled() -> None:
     settings = Settings(
         PROJECT_NAME="Test",
+        SECRET_KEY="test-secret-key-not-default",
         FIRST_SUPERUSER="admin@example.com",
         FIRST_SUPERUSER_PASSWORD="secret",
         ENVIRONMENT="production",
