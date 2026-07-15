@@ -1,0 +1,82 @@
+# Deploy backend + Postgres stack to Synology on push to main.
+#
+# Requires a self-hosted runner on the NAS labeled "synology"
+# (Cloud GitHub runners usually cannot reach a home NAS).
+#
+# One-time NAS setup:
+#   1. Create a runner user / use a dedicated account with Docker access
+#   2. Repo → Settings → Actions → Runners → New self-hosted runner
+#   3. Follow Linux x64 (or ARM) install steps on the NAS
+#   4. When asked for labels, add: synology
+#   5. Install as a service so it survives reboot
+#   6. Ensure the clone at DEPLOY_PATH can `git pull` (deploy key or credential)
+#
+# The runner only rebuilds the Synology stack; frontend stays on Vercel/Pages.
+
+name: Deploy Synology
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'compose.synology.yml'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/deploy-synology.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deploy-synology
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, synology]
+    timeout-minutes: 30
+    env:
+      # Change if your clone lives elsewhere on the NAS
+      DEPLOY_PATH: /volume1/docker/blogsite/Blog
+    steps:
+      - name: Pull and rebuild
+        run: |
+          set -euo pipefail
+          cd "$DEPLOY_PATH"
+
+          echo "::group::Git pull"
+          git fetch origin main
+          git reset --hard origin/main
+          echo "::endgroup::"
+
+          echo "::group::Build backend"
+          docker-compose -f compose.synology.yml build backend
+          echo "::endgroup::"
+
+          echo "::group::Migrate"
+          docker-compose -f compose.synology.yml run --rm prestart
+          echo "::endgroup::"
+
+          echo "::group::Restart backend"
+          docker-compose -f compose.synology.yml up -d backend
+          docker image prune -f
+          echo "::endgroup::"
+
+      - name: Health check
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6; do
+            if curl -sf http://127.0.0.1:8000/api/v1/utils/health-check/; then
+              echo "Healthy"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Backend health check failed"
+          exit 1
+
+      - name: Summary
+        if: success()
+        run: echo "### Deployed to Synology :rocket:" >> "$GITHUB_STEP_SUMMARY"
