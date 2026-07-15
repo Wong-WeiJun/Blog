@@ -1,0 +1,27 @@
+# ── Deploy: Synology NAS (self-hosted runner + docker-compose) ───────────────
+# Copy/adapt to .github/workflows/deploy-synology.yml
+#
+# Preferred for home NAS + Cloudflare Tunnel (no inbound SSH needed).
+# Install a GitHub Actions self-hosted runner on the NAS with label: synology
+
+name: Deploy Synology
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, synology]
+    steps:
+      - name: Pull and rebuild
+        working-directory: /volume1/docker/blogsite/Blog
+        run: |
+          set -e
+          git fetch origin main
+          git reset --hard origin/main
+          docker-compose -f compose.synology.yml build backend
+          docker-compose -f compose.synology.yml run --rm prestart
+          docker-compose -f compose.synology.yml up -d backend
+          docker image prune -f
