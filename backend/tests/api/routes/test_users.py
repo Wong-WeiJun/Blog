@@ -8,6 +8,7 @@ from app import crud
 from app.core.config import settings
 from app.core.security import verify_password
 from app.models import User, UserCreate
+from app.utils import email_delivery_enabled
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_email, random_lower_string
 
@@ -333,7 +334,9 @@ def test_register_user(client: TestClient, db: Session) -> None:
     assert user_db
     assert user_db.email == username
     assert user_db.full_name == full_name
-    assert user_db.email_verified is False
+    # Unverified only when an email provider can send a verification link;
+    # otherwise signup auto-verifies so accounts remain usable in CI/local.
+    assert user_db.email_verified is (not email_delivery_enabled())
 
 
 def test_register_user_auto_verifies_without_email_provider(
