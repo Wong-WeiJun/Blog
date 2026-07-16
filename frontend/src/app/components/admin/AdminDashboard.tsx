@@ -56,8 +56,6 @@ export function AdminDashboard() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <AdminTopBar
           view={view}
-          search={search}
-          onSearch={setSearch}
           onNewPost={openNewPost}
           onNewProject={openNewProject}
           collapsed={sidebarCollapsed}
