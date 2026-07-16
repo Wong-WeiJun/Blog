@@ -1,4 +1,4 @@
-import { Search, Plus, PanelLeftClose, PanelLeftOpen, Bell } from "lucide-react";
+import { Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 const VIEW_TITLES: Record<string, string> = {
   overview:  "Overview",
@@ -13,15 +13,13 @@ const VIEW_TITLES: Record<string, string> = {
 
 interface Props {
   view: string;
-  search: string;
-  onSearch: (v: string) => void;
   onNewPost: () => void;
   onNewProject: () => void;
   collapsed: boolean;
   onToggleSidebar: () => void;
 }
 
-export function AdminTopBar({ view, search, onSearch, onNewPost, onNewProject, collapsed, onToggleSidebar }: Props) {
+export function AdminTopBar({ view, onNewPost, onNewProject, collapsed, onToggleSidebar }: Props) {
   return (
     <div
       style={{
@@ -56,33 +54,6 @@ export function AdminTopBar({ view, search, onSearch, onNewPost, onNewProject, c
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />
-
-      {/* Search */}
-      <div
-        style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: "9px", padding: "7px 12px", minWidth: "220px", transition: "border-color 0.15s" }}
-        onFocusCapture={(e) => (e.currentTarget.style.borderColor = "rgba(80,70,229,0.45)")}
-        onBlurCapture={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.09)")}
-      >
-        <Search size={14} color="rgba(255,255,255,0.35)" />
-        <input
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-          placeholder="Search…"
-          style={{ background: "transparent", border: "none", outline: "none", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "#fff", width: "100%" }}
-        />
-        {search && (
-          <button onClick={() => onSearch("")} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
-        )}
-      </div>
-
-      {/* Bell — placeholder */}
-      <button
-        title="Notifications (coming soon)"
-        disabled
-        style={{ position: "relative", color: "rgba(255,255,255,0.25)", background: "transparent", border: "none", cursor: "default", padding: "6px", borderRadius: "7px", display: "flex", opacity: 0.5 }}
-      >
-        <Bell size={18} />
-      </button>
 
       {/* New Post / New Project */}
       {view === "posts" && (
