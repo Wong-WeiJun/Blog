@@ -95,7 +95,6 @@ function MenuItem({ icon, label, onClick, danger }: { icon: ReactNode; label: st
 
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -143,29 +142,6 @@ export function Navbar() {
 
         {/* Right — desktop */}
         <div className="hidden md:flex items-center gap-3">
-          {searchOpen ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "8px", padding: "6px 12px" }}>
-              <Search size={14} color="rgba(255,255,255,0.5)" />
-              <input
-                autoFocus
-                placeholder="Search posts…"
-                style={{ background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: "0.875rem", fontFamily: "'Inter', sans-serif", width: "160px" }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    setSearchOpen(false);
-                  }
-                }}
-              />
-              <button onClick={() => setSearchOpen(false)}>
-                <X size={14} color="rgba(255,255,255,0.5)" />
-              </button>
-            </div>
-          ) : (
-            <button onClick={() => setSearchOpen(true)} style={{ color: "rgba(255,255,255,0.6)", padding: "6px", borderRadius: "6px", background: "transparent", border: "none", cursor: "pointer", display: "flex", transition: "color 0.15s, background 0.15s" }} className="hover:bg-white/10 hover:text-white">
-              <Search size={18} />
-            </button>
-          )}
-
           {user ? (
             <UserMenu />
           ) : (
