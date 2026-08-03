@@ -71,6 +71,17 @@ def generate_avatar_key(user_id: str, filename: str) -> str:
     return f"avatars/{user_id}/{uuid.uuid4()}.{ext}"
 
 
+def generate_post_image_key(filename: str) -> str:
+    """
+    Produce a unique R2 object key for an in-content post image.
+    Pattern: posts/<uuid4>.<ext>
+    """
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "jpg"
+    if ext not in {"jpg", "jpeg", "png", "webp", "gif", "avif"}:
+        ext = "jpg"
+    return f"posts/{uuid.uuid4()}.{ext}"
+
+
 def presign_upload(
     key: str,
     content_type: str,
