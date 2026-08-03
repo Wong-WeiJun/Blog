@@ -56,6 +56,8 @@ class TestAdminStats:
         db: Session,
         superuser_token_headers: dict[str, str],
     ):
+        baseline = client.get(BASE, headers=superuser_token_headers).json()
+
         author = create_random_user(db)
         pub = create_random_post(db, author, status=PostStatus.published, featured=True)
         pub.view_count = 100
@@ -78,13 +80,13 @@ class TestAdminStats:
         assert r.status_code == 200
         data = r.json()
 
-        assert data["total_posts"] == 3
-        assert data["published_posts"] == 2
-        assert data["draft_posts"] == 1
-        assert data["featured_posts"] == 1
-        assert data["total_views"] == 100
-        assert data["total_comments"] == 2
-        assert len(data["top_posts"]) == 2
+        assert data["total_posts"] == baseline["total_posts"] + 3
+        assert data["published_posts"] == baseline["published_posts"] + 2
+        assert data["draft_posts"] == baseline["draft_posts"] + 1
+        assert data["featured_posts"] == baseline["featured_posts"] + 1
+        assert data["total_views"] == baseline["total_views"] + 100
+        assert data["total_comments"] == baseline["total_comments"] + 2
+        assert len(data["top_posts"]) >= 2
         assert data["top_posts"][0]["view_count"] == 100
 
     def test_period_filter_changes_comment_counts(
