@@ -50,3 +50,7 @@ export function uploadAvatarImage(file: File, onProgress?: UploadProgress): Prom
 export function uploadCoverImage(file: File, onProgress?: UploadProgress): Promise<string> {
   return uploadFile("/api/v1/uploads/cover-image", file, onProgress).then((res) => res.public_url);
 }
+
+export function uploadPostImage(file: File, onProgress?: UploadProgress): Promise<string> {
+  return uploadFile("/api/v1/uploads/post-image", file, onProgress).then((res) => res.public_url);
+}
