@@ -18,6 +18,7 @@ from app.core.config import settings
 COVER_URL = f"{settings.API_V1_STR}/uploads/cover-image-url"
 AVATAR_URL = f"{settings.API_V1_STR}/uploads/avatar-url"
 COVER_UPLOAD_URL = f"{settings.API_V1_STR}/uploads/cover-image"
+POST_IMAGE_UPLOAD_URL = f"{settings.API_V1_STR}/uploads/post-image"
 AVATAR_UPLOAD_URL = f"{settings.API_V1_STR}/uploads/avatar"
 SAVE_AVATAR_URL = f"{settings.API_V1_STR}/users/me/avatar"
 
@@ -276,6 +277,65 @@ class TestDirectUploads:
             headers=normal_user_token_headers,
         )
         assert r.status_code == 403
+
+    def test_post_image_upload_requires_superuser(
+        self, client: TestClient, normal_user_token_headers: dict[str, str]
+    ):
+        r = client.post(
+            POST_IMAGE_UPLOAD_URL,
+            files={"file": ("inline.png", b"fake-image", "image/png")},
+            headers=normal_user_token_headers,
+        )
+        assert r.status_code == 403
+
+    def test_post_image_upload_requires_auth(self, client: TestClient):
+        r = client.post(
+            POST_IMAGE_UPLOAD_URL,
+            files={"file": ("inline.png", b"fake-image", "image/png")},
+        )
+        assert r.status_code == 401
+
+    def test_post_image_upload_returns_503_when_r2_not_configured(
+        self, client: TestClient, superuser_token_headers: dict[str, str]
+    ):
+        with patch.multiple(
+            "app.core.config.settings",
+            R2_ACCOUNT_ID=None,
+            R2_ACCESS_KEY_ID=None,
+            R2_SECRET_ACCESS_KEY=None,
+            R2_BUCKET=None,
+        ):
+            r = client.post(
+                POST_IMAGE_UPLOAD_URL,
+                files={"file": ("inline.png", b"fake-image", "image/png")},
+                headers=superuser_token_headers,
+            )
+        assert r.status_code == 503
+
+    def test_post_image_upload_via_backend(
+        self, client: TestClient, superuser_token_headers: dict[str, str]
+    ):
+        boto_mock = MagicMock()
+
+        with (
+            patch.multiple("app.core.config.settings", **_R2_ENABLED_SETTINGS),
+            patch("app.core.r2._client", return_value=boto_mock),
+            patch(
+                "app.core.r2._public_url",
+                return_value="https://cdn.example.com/posts/test.png",
+            ),
+        ):
+            r = client.post(
+                POST_IMAGE_UPLOAD_URL,
+                files={"file": ("diagram.png", b"fake-image", "image/png")},
+                headers=superuser_token_headers,
+            )
+
+        assert r.status_code == 200
+        body = r.json()
+        assert body["public_url"] == "https://cdn.example.com/posts/test.png"
+        assert body["key"].startswith("posts/")
+        boto_mock.put_object.assert_called_once()
 
 
 # ──────────────────────── avatar-url ─────────────────────────────────
@@ -585,6 +645,23 @@ class TestR2Helpers:
 
         key = generate_cover_key(f"photo.{ext}")
         assert key.split(".")[-1] == ext
+
+    def test_generate_post_image_key_format(self):
+        from app.core.r2 import generate_post_image_key
+
+        key = generate_post_image_key("diagram.webp")
+        assert key.startswith("posts/")
+        assert key.endswith(".webp")
+        uuid_part = key[len("posts/") : -len(".webp")]
+        import uuid
+
+        uuid.UUID(uuid_part)
+
+    def test_generate_post_image_key_unknown_ext_defaults_to_jpg(self):
+        from app.core.r2 import generate_post_image_key
+
+        key = generate_post_image_key("shot.bmp")
+        assert key.endswith(".jpg")
 
     def test_generate_avatar_key_format(self):
         import uuid
