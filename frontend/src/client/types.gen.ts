@@ -115,6 +115,16 @@ export type BodyUploadsUploadCoverImage = {
 };
 
 /**
+ * Body_uploads-upload_post_image
+ */
+export type BodyUploadsUploadPostImage = {
+    /**
+     * File
+     */
+    file: string;
+};
+
+/**
  * Certification
  */
 export type Certification = {
@@ -2101,7 +2111,9 @@ export type UtilsHealthCheckResponses = {
      * Response Utils-Health Check
      * Successful Response
      */
-    200: boolean;
+    200: {
+        [key: string]: string;
+    };
 };
 
 export type UtilsHealthCheckResponse = UtilsHealthCheckResponses[keyof UtilsHealthCheckResponses];
@@ -2367,6 +2379,31 @@ export type UploadsUploadCoverImageResponses = {
 };
 
 export type UploadsUploadCoverImageResponse = UploadsUploadCoverImageResponses[keyof UploadsUploadCoverImageResponses];
+
+export type UploadsUploadPostImageData = {
+    body: BodyUploadsUploadPostImage;
+    path?: never;
+    query?: never;
+    url: '/api/v1/uploads/post-image';
+};
+
+export type UploadsUploadPostImageErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UploadsUploadPostImageError = UploadsUploadPostImageErrors[keyof UploadsUploadPostImageErrors];
+
+export type UploadsUploadPostImageResponses = {
+    /**
+     * Successful Response
+     */
+    200: UploadedResponse;
+};
+
+export type UploadsUploadPostImageResponse = UploadsUploadPostImageResponses[keyof UploadsUploadPostImageResponses];
 
 export type UploadsUploadAvatarData = {
     body: BodyUploadsUploadAvatar;
