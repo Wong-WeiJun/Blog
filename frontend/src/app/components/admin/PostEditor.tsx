@@ -1,4 +1,4 @@
-import type { ReactNode, RefObject, DragEvent } from "react";
+import type { ReactNode, RefObject, DragEvent, ClipboardEvent } from "react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
   ArrowLeft, Bold, Italic, Code, Heading2, Heading3, Link2,
@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { postsCreatePost, postsUpdatePost, postsPublishPost } from "@/client/sdk.gen";
-import { uploadCoverImage } from "../../../lib/upload-image";
+import { uploadCoverImage, uploadPostImage } from "../../../lib/upload-image";
 import type { PostResponse, PostStatus } from "@/client/types.gen";
 import { BRAND_DOMAIN } from "../../../lib/constants";
 import useCustomToast from "../../../hooks/useCustomToast";
@@ -57,8 +57,54 @@ function insertWrap(ref: RefObject<HTMLTextAreaElement | null>, setValue: (v: st
   });
 }
 
-function Toolbar({ textareaRef, setValue }: { textareaRef: RefObject<HTMLTextAreaElement | null>; setValue: (v: string) => void }) {
+function altFromFilename(filename: string): string {
+  const base = filename.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+  return base || "image";
+}
+
+function insertMarkdownImage(
+  ref: RefObject<HTMLTextAreaElement | null>,
+  setValue: (v: string) => void,
+  alt: string,
+  url: string,
+) {
+  const el = ref.current;
+  if (!el) return;
+  const { selectionStart: s, selectionEnd: e, value } = el;
+  const before = value.slice(0, s);
+  const after = value.slice(e);
+  const needsLeadingNewline = before.length > 0 && !before.endsWith("\n");
+  const needsTrailingNewline = after.length > 0 && !after.startsWith("\n");
+  const md = `${needsLeadingNewline ? "\n" : ""}![${alt}](${url})${needsTrailingNewline ? "\n" : ""}`;
+  setValue(before + md + after);
+  requestAnimationFrame(() => {
+    el.focus();
+    const cursor = before.length + md.length;
+    el.setSelectionRange(cursor, cursor);
+  });
+}
+
+type ContentImageUploadStatus = "idle" | "uploading" | "done" | "error";
+
+function Toolbar({
+  textareaRef,
+  setValue,
+  onUploadImage,
+  uploadStatus,
+  uploadProgress,
+  uploadError,
+}: {
+  textareaRef: RefObject<HTMLTextAreaElement | null>;
+  setValue: (v: string) => void;
+  onUploadImage: (file: File) => void;
+  uploadStatus: ContentImageUploadStatus;
+  uploadProgress: number;
+  uploadError: string | null;
+}) {
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const isUploading = uploadStatus === "uploading";
+
   const toggle = (key: string, wrap: string, block?: string) => {
     insertWrap(textareaRef, setValue, wrap, block);
     setActiveFormats((prev) => { const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next; });
@@ -73,7 +119,6 @@ function Toolbar({ textareaRef, setValue }: { textareaRef: RefObject<HTMLTextAre
     { key: "quote",  icon: <Quote size={14} />,     label: "Blockquote",   action: () => insertWrap(textareaRef, setValue, "", "> ") },
     null,
     { key: "link",   icon: <Link2 size={14} />,     label: "Insert link",  action: () => insertWrap(textareaRef, setValue, "", "[text](url)") },
-    { key: "image",  icon: <ImagePlus size={14} />, label: "Insert image", action: () => insertWrap(textareaRef, setValue, "", "![alt](url)") },
   ];
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "2px", padding: "8px 12px", borderBottom: "1px solid rgba(255,255,255,0.07)", flexWrap: "wrap" }}>
@@ -84,6 +129,23 @@ function Toolbar({ textareaRef, setValue }: { textareaRef: RefObject<HTMLTextAre
           <ToolBtn key={t.key} icon={t.icon} label={t.label} active={activeFormats.has(t.key)} onClick={t.action} />
         )
       )}
+      <ToolBtn
+        icon={isUploading ? <Loader2 size={14} style={{ animation: "spin 0.8s linear infinite" }} /> : <ImagePlus size={14} />}
+        label={isUploading ? `Uploading ${uploadProgress}%` : "Insert image"}
+        active={isUploading}
+        onClick={() => { if (!isUploading) imageInputRef.current?.click(); }}
+      />
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onUploadImage(file);
+          e.target.value = "";
+        }}
+      />
       <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.1)", margin: "0 4px" }} />
       <ToolBtn
         icon={<span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px" }}>{"</>"}</span>}
@@ -95,6 +157,21 @@ function Toolbar({ textareaRef, setValue }: { textareaRef: RefObject<HTMLTextAre
           setValue(value.slice(0, s) + "\n```\ncode here\n```\n" + value.slice(s));
         }}
       />
+      {uploadStatus === "uploading" && (
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: "rgba(165,180,252,0.85)", marginLeft: "8px" }}>
+          Uploading image… {uploadProgress}%
+        </span>
+      )}
+      {uploadStatus === "done" && (
+        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", color: "#4ade80", marginLeft: "8px", display: "flex", alignItems: "center", gap: "4px" }}>
+          <Check size={12} /> Image inserted
+        </span>
+      )}
+      {uploadStatus === "error" && uploadError && (
+        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", color: "#f87171", marginLeft: "8px", display: "flex", alignItems: "center", gap: "4px", maxWidth: "280px" }}>
+          <AlertCircle size={12} style={{ flexShrink: 0 }} /> {uploadError}
+        </span>
+      )}
     </div>
   );
 }
@@ -522,6 +599,76 @@ export function PostEditor({ onBack, onPublished, post }: Props) {
   const [date, setDate]         = useState<string>(initial.date);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [contentImageStatus, setContentImageStatus] = useState<ContentImageUploadStatus>("idle");
+  const [contentImageProgress, setContentImageProgress] = useState(0);
+  const [contentImageError, setContentImageError] = useState<string | null>(null);
+  const [contentDragging, setContentDragging] = useState(false);
+  const contentImageStatusTimer = useRef<number | null>(null);
+
+  const uploadAndInsertContentImage = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setContentImageError("Please select an image file (JPEG, PNG, WebP, etc.)");
+      setContentImageStatus("error");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setContentImageError("Image must be under 10 MB.");
+      setContentImageStatus("error");
+      return;
+    }
+
+    if (contentImageStatusTimer.current) {
+      window.clearTimeout(contentImageStatusTimer.current);
+      contentImageStatusTimer.current = null;
+    }
+
+    setContentImageStatus("uploading");
+    setContentImageProgress(0);
+    setContentImageError(null);
+
+    try {
+      const publicUrl = await uploadPostImage(file, setContentImageProgress);
+      insertMarkdownImage(textareaRef, setContent, altFromFilename(file.name), publicUrl);
+      setContentImageStatus("done");
+      contentImageStatusTimer.current = window.setTimeout(() => {
+        setContentImageStatus("idle");
+        contentImageStatusTimer.current = null;
+      }, 2500);
+    } catch (err) {
+      setContentImageError(err instanceof Error ? err.message : "Upload failed");
+      setContentImageStatus("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (contentImageStatusTimer.current) {
+        window.clearTimeout(contentImageStatusTimer.current);
+      }
+    };
+  }, []);
+
+  const handleContentPaste = useCallback((e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of Array.from(items)) {
+      if (item.kind === "file" && item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          void uploadAndInsertContentImage(file);
+        }
+        return;
+      }
+    }
+  }, [uploadAndInsertContentImage]);
+
+  const handleContentDrop = useCallback((e: DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    setContentDragging(false);
+    const file = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/"));
+    if (file) void uploadAndInsertContentImage(file);
+  }, [uploadAndInsertContentImage]);
 
   useEffect(() => {
     markAdminEditorSession();
@@ -742,14 +889,38 @@ export function PostEditor({ onBack, onPublished, post }: Props) {
             )}
           </div>
 
-          <Toolbar textareaRef={textareaRef} setValue={setContent} />
+          <Toolbar
+            textareaRef={textareaRef}
+            setValue={setContent}
+            onUploadImage={(file) => { void uploadAndInsertContentImage(file); }}
+            uploadStatus={contentImageStatus}
+            uploadProgress={contentImageProgress}
+            uploadError={contentImageError}
+          />
 
           <textarea
             ref={textareaRef}
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            onPaste={handleContentPaste}
+            onDragOver={(e) => { e.preventDefault(); setContentDragging(true); }}
+            onDragLeave={() => setContentDragging(false)}
+            onDrop={handleContentDrop}
             spellCheck
-            style={{ flex: 1, padding: "28px 36px", background: "transparent", border: "none", outline: "none", fontFamily: "'Inter', sans-serif", fontSize: "1rem", lineHeight: 1.85, color: "rgba(255,255,255,0.82)", resize: "none", overflowY: "auto" }}
+            style={{
+              flex: 1,
+              padding: "28px 36px",
+              background: contentDragging ? "rgba(80,70,229,0.06)" : "transparent",
+              border: contentDragging ? "2px dashed rgba(80,70,229,0.45)" : "2px dashed transparent",
+              outline: "none",
+              fontFamily: "'Inter', sans-serif",
+              fontSize: "1rem",
+              lineHeight: 1.85,
+              color: "rgba(255,255,255,0.82)",
+              resize: "none",
+              overflowY: "auto",
+              transition: "background 0.15s, border-color 0.15s",
+            }}
           />
 
           <WordCountBar content={content} />
