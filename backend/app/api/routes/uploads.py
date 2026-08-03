@@ -2,6 +2,7 @@
 Upload endpoints — server-side Cloudflare R2 uploads (avoids browser CORS to R2).
 
 POST /api/v1/uploads/cover-image   → upload a post cover image (admin only)
+POST /api/v1/uploads/post-image    → upload an in-content post image (admin only)
 POST /api/v1/uploads/avatar          → upload a profile picture (any logged-in user)
 
 Legacy presigned URL endpoints remain for backwards compatibility:
@@ -17,6 +18,7 @@ from app.core.config import settings
 from app.core.r2 import (
     generate_avatar_key,
     generate_cover_key,
+    generate_post_image_key,
     guess_content_type,
     presign_upload,
     upload_object,
@@ -142,6 +144,20 @@ async def upload_cover_image(file: UploadFile = File(...)) -> UploadedResponse:
     content_type = _validated_content_type(filename, file.content_type)
     data = await _read_upload(file, _MAX_COVER_BYTES)
     key = generate_cover_key(filename)
+    return _do_upload(key, content_type, data)
+
+
+@router.post(
+    "/post-image",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=UploadedResponse,
+    summary="Upload an in-content post image via the backend (admin only)",
+)
+async def upload_post_image(file: UploadFile = File(...)) -> UploadedResponse:
+    filename = file.filename or "image.jpg"
+    content_type = _validated_content_type(filename, file.content_type)
+    data = await _read_upload(file, _MAX_COVER_BYTES)
+    key = generate_post_image_key(filename)
     return _do_upload(key, content_type, data)
 
 
