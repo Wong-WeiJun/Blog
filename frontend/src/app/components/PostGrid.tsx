@@ -161,12 +161,17 @@ export function PostGrid({ initialTag = "All" }: { initialTag?: string }) {
 
   // Accumulate pages into allPosts.
   // When page resets to 1 (tag change), replace instead of appending.
+  // Guard on response.page — placeholderData keeps the previous page visible while fetching.
   useEffect(() => {
-    if (!data?.data?.posts) return;
+    const response = data?.data;
+    if (!response?.posts || response.page !== page) return;
     if (page === 1) {
-      setAllPosts(data.data.posts);
+      setAllPosts(response.posts);
     } else {
-      setAllPosts((prev) => [...prev, ...data.data.posts]);
+      setAllPosts((prev) => {
+        const ids = new Set(prev.map((p) => p.id));
+        return [...prev, ...response.posts.filter((p) => !ids.has(p.id))];
+      });
     }
   }, [data, page]);
 
