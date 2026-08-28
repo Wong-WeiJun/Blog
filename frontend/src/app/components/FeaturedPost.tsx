@@ -36,9 +36,7 @@ export function FeaturedPost() {
 
   if (!post) return null;
 
-  const primaryTag = post.tags?.[0];
-  const tagName = primaryTag?.name ?? "";
-  const tagColor = primaryTag?.color ?? "#6366f1";
+  const postTags = post.tags ?? [];
   const authorName = post.author?.full_name ?? "Author";
 
   return (
@@ -91,11 +89,15 @@ export function FeaturedPost() {
           </div>
 
           <div style={{ padding: "32px 36px", display: "flex", flexDirection: "column", gap: "14px", flex: 1 }}>
-            <div className="flex items-center gap-3">
-              {tagName && (
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", fontWeight: 600, color: tagColor, background: `${tagColor}18`, border: `1px solid ${tagColor}30`, borderRadius: "6px", padding: "3px 10px" }}>
-                  {tagName}
-                </span>
+            <div className="flex items-center flex-wrap gap-3">
+              {postTags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {postTags.map((tag) => (
+                    <span key={tag.name} style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", fontWeight: 600, color: tag.color, background: `${tag.color}18`, border: `1px solid ${tag.color}30`, borderRadius: "6px", padding: "3px 10px" }}>
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
               )}
               <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.35)" }}>{post.read_time} read</span>
             </div>
