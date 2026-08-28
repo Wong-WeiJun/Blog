@@ -7,17 +7,10 @@ import { postsReadPosts, tagsGetTags } from "@/client/sdk.gen";
 import type { PostResponse, TagWithCountResponse } from "@/client/types.gen";
 
 // ─── PostCard ────────────────────────────────────────────────────────────────
-// Two field references changed from the mock version:
-//   post.tag       → post.tags[0]?.name    (tags is now an array from the backend)
-//   post.tagColor  → post.tags[0]?.color
-//   post.readTime  → post.read_time        (snake_case, matches backend response)
-//   post.date      → formatDate(post.published_at)
 export function PostCard({ post }: { post: PostResponse }) {
   const [hovered, setHovered] = useState(false);
 
-  const primaryTag = post.tags?.[0];
-  const tagName  = primaryTag?.name  ?? "";
-  const tagColor = primaryTag?.color ?? "#6366f1";
+  const postTags = post.tags ?? [];
 
   const formattedDate = post.published_at
     ? new Date(post.published_at).toLocaleDateString("en-US", {
@@ -46,17 +39,23 @@ export function PostCard({ post }: { post: PostResponse }) {
       onMouseLeave={() => setHovered(false)}
     >
       {/* Top row */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {postTags.map((tag) => (
+            <span key={tag.name} style={{
+              fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", fontWeight: 600,
+              color: tag.color,
+              background: `${tag.color}18`,
+              border: `1px solid ${tag.color}38`,
+              borderRadius: "6px", padding: "3px 9px",
+              whiteSpace: "nowrap",
+            }}>
+              {tag.name}
+            </span>
+          ))}
+        </div>
         <span style={{
-          fontFamily: "'Inter', sans-serif", fontSize: "0.72rem", fontWeight: 600,
-          color: tagColor,
-          background: `${tagColor}18`,
-          border: `1px solid ${tagColor}38`,
-          borderRadius: "6px", padding: "3px 9px",
-        }}>
-          {tagName}
-        </span>
-        <span style={{
+          flexShrink: 0,
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: "0.68rem", color: "rgba(255,255,255,0.3)",
         }}>
