@@ -265,9 +265,12 @@ function Certifications({ profile }: { profile: SiteAboutResponse }) {
               <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.775rem", color: "rgba(255,255,255,0.45)" }}>{cert.issuer}</span>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: "rgba(255,255,255,0.3)" }}>{cert.date}</span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.62rem", fontWeight: 700, color: cert.color, background: `${cert.color}15`, border: `1px solid ${cert.color}30`, borderRadius: "5px", padding: "2px 7px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>{cert.date}</span>
+              <span
+                title={cert.badge}
+                style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.62rem", fontWeight: 700, color: cert.color, background: `${cert.color}15`, border: `1px solid ${cert.color}30`, borderRadius: "5px", padding: "2px 7px", minWidth: 0, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+              >
                 {cert.badge}
               </span>
             </div>
