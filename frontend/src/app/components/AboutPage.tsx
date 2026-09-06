@@ -30,6 +30,7 @@ function Section({ id, children, alt }: { id?: string; children: ReactNode; alt?
         padding: "80px 0",
         background: alt ? "rgba(255,255,255,0.015)" : "transparent",
         borderTop: "1px solid rgba(255,255,255,0.06)",
+        scrollMarginTop: "164px",
       }}
     >
       <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 32px" }}>
