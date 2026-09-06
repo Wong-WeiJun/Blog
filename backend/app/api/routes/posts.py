@@ -53,7 +53,7 @@ def read_posts(
     if sort_by == "view_count":
         query = query.order_by(Post.view_count.desc(), Post.created_at.desc())  # type: ignore[attr-defined]
     else:
-        query = query.order_by(Post.created_at.desc())
+        query = query.order_by(Post.published_at.desc(), Post.created_at.desc())  # type: ignore[attr-defined]
 
     total = session.exec(select(func.count()).select_from(query.subquery())).one()
     posts = session.exec(query.offset(offset).limit(limit)).all()
